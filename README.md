@@ -13,6 +13,7 @@
 <p align="center">
   <a href="#为什么需要它">为什么需要它</a> |
   <a href="docs/README_en.md">English</a> |
+  <a href="docs/showcase.html">Showcase</a> |
   <a href="#核心-skills">Skills</a> |
   <a href="#快速开始">快速开始</a> |
   <a href="#工作流">工作流</a> |
