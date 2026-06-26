@@ -262,11 +262,14 @@ Yes. The workflow does not assume a greenfield project. The spec-explorer inspec
 
 ## Current Status
 
-This repository currently contains a usable `v0.1` plugin scaffold:
+**v0.2.0** (2026-06-26) — Open-source announcement ready.
 
-- plugin metadata
-- skill boundaries
-- full planning and execution-contract templates
-- supporting docs for artifact mapping and state transitions
-- two complete example change sets
-- install guide, license, and changelog
+- ✅ TypeScript engine with strict compilation (`npm run build`)
+- ✅ Integration test suite using real example artifacts (`npm test`)
+- ✅ 9 collaborative skills with complete workflow coverage
+- ✅ 7-platform support (Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae)
+- ✅ Self-contained: zero external npm dependencies
+- ✅ Two complete example change sets (add-dark-mode, refactor-auth-boundary)
+- ✅ MIT license, CONTRIBUTING.md, and installation guide included
+
+See [CHANGELOG.md](../CHANGELOG.md) for detailed release notes.

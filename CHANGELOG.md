@@ -36,6 +36,13 @@ The format loosely follows Keep a Changelog.
   - `workflow-orchestrator` — content-level inspection + 3 new routing targets
 - Plugin metadata updated to v0.2.0 with expanded keywords across all manifest files
 
+### Release Quality
+
+- **TypeScript compilation** — Added `tsconfig.json` (ES2022, NodeNext, strict mode), `npm run build` produces `dist/` with declarations
+- **Integration tests** — 8 test cases using real example artifacts (`docs/examples/`), `npm test` passes
+- **package.json** — `main` points to `dist/index.js`, `types` to `dist/index.d.ts`
+- **Documentation** — Updated English README Current Status to v0.2.0
+
 ## [0.1.0] - 2026-06-25
 
 ### Added
