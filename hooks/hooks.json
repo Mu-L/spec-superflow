@@ -1,8 +1,15 @@
 {
-  "hooks": [
-    {
-      "event": "Startup|Clear|Compact",
-      "command": "bash hooks/session-start"
-    }
-  ]
+  "description": "spec-superflow session start hook - injects workflow-orchestrator as session context",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start\""
+          }
+        ]
+      }
+    ]
+  }
 }
