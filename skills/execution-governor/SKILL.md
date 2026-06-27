@@ -89,6 +89,30 @@ Return to `specifying` or `bridging` if:
 - design assumptions fail
 - the current artifacts no longer define the intended implementation
 
+## Execution Mode Selection
+
+Before starting implementation, determine the execution mode:
+
+### Automatic Selection Criteria
+
+1. Count total tasks in the execution contract's task batches
+2. Analyze cross-module dependencies (does any task modify files in > 2 modules?)
+3. Decision:
+   - Tasks ≤ 3 AND no cross-module dependencies → **Inline mode**
+   - Otherwise → **SDD mode** (default)
+
+### Reporting
+
+Before executing the first task, report to the user:
+- Selected mode and reasoning
+- Total task count
+- Cross-module dependency analysis (if any)
+- Offer user override: "You can override this by saying 'use SDD' or 'use inline'"
+
+### User Override
+
+If the user explicitly requests a mode, use it regardless of automatic selection. Record the override in the progress ledger.
+
 ## Subagent-Driven Development (SDD) Workflow
 
 For changes with more than one execution batch, use the SDD workflow: dispatch a fresh implementer subagent per task, review each task (spec compliance + code quality), and conduct a broad final review after all tasks are complete.
@@ -166,15 +190,40 @@ Refer to `task-reviewer-prompt.md` for the complete dispatch template. Key princ
 
 The task reviewer may report "⚠️ Cannot verify from diff" items — requirements in unchanged code or spanning tasks. Resolve each yourself before marking the task complete. If real gaps, treat as failed spec review — send back to implementer and re-review.
 
-## Execution Modes
+## Inline Execution Mode
 
-### Small changes (single batch)
+For small changes (≤ 3 tasks, no cross-module dependencies). Executes in the current session without subagent dispatch.
 
-Execute in a focused serial path with explicit batch completion checks. Follow TDD directly without subagent dispatch.
+### Per-Task Loop (Inline)
 
-### Larger changes (multiple batches)
+1. **Read task**: Use `scripts/task-brief PLAN_FILE N` to extract the task
+2. **Write failing test**: Follow the task's TDD phase 1 — write the exact test code specified
+3. **Confirm failure**: Run the test, verify it fails for the expected reason
+4. **Implement**: Follow the task's TDD phase 3 — write the exact implementation code specified
+5. **Confirm green**: Run the full test suite, verify all tests pass
+6. **Checkpoint review**: Before proceeding to the next task:
+   - Verify the task's done-when criteria from the execution contract
+   - Verify the task output against its spec requirements (SHALL/MUST statements)
+   - If any check fails → STOP, report the gap, ask user how to proceed
+7. **Commit**: Follow the task's commit step
+8. **Progress ledger**: Append task completion to `.superpowers/sdd/progress.md`
 
-Use the SDD workflow: dispatch per-task implementers, review after each task, broad review after all batches.
+### Inline → SDD Escalation
+
+If an inline task hits a BLOCKED state (test failure after 3 fix attempts, or the implementation requires changes outside the task's declared file paths), suggest escalating to SDD mode:
+- "This task is more complex than estimated. Switch to SDD mode for subagent-driven implementation?"
+
+## Execution Modes Summary
+
+| Aspect | SDD Mode | Inline Mode |
+|--------|----------|-------------|
+| Task count | > 3 or cross-module | ≤ 3, single module |
+| Implementation | Subagent per task | Current session |
+| Review | Reviewer subagent per task | Checkpoint review by governor |
+| Model selection | Per-task model routing | Single model |
+| Progress ledger | Yes | Yes |
+| TDD Iron Law | Yes | Yes |
+| Escalation | → systematic-debugger | → SDD mode or systematic-debugger |
 
 ## Progress Reporting
 

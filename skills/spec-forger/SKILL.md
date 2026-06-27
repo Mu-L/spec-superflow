@@ -58,21 +58,39 @@ Must explain architectural decisions and trade-offs, not line-by-line implementa
 
 Must be ordered, verifiable, and small enough to become execution batches later.
 
-**Granularity requirement**: Each task MUST be small enough that a developer can complete it in 2-5 minutes of focused work. This means:
+**File Structure section**: Every tasks.md MUST begin with a `## File Structure` section listing all files to be created or modified, with each file's responsibility stated in one sentence. Format:
+- `Create: path/to/file.ts` — One-sentence responsibility
+- `Modify: path/to/existing.ts` — What changes
 
-- A task is one atomic operation: write one function, add one test case, update one config value
-- A task is NOT "implement the authentication module" — that's a batch of tasks
-- If a task takes longer than 5 minutes to describe, it should be decomposed further
+**Interfaces section**: Every tasks.md MUST include a `## Interfaces` section declaring cross-batch dependencies. Format:
+```
+### Batch N → Batch M
+- **Produces**: `type/function name` — consumed by Batch M for purpose
+```
 
-**No placeholders**: Tasks MUST NOT contain "TBD", "TODO", "figure out later", or similar placeholder language. Every task must be concrete and immediately actionable. If there's uncertainty, resolve it during specification — do not push it to implementation.
+**Per-task format**: Each task MUST include:
+1. **Exact file paths**: `Create: path/to/file.ts` or `Modify: path/to/file.ts:line-range` for every file the task touches
+2. **TDD phases expanded** (for code-producing tasks):
+   - Write the failing test with exact test code
+   - Run the test and confirm it fails for the expected reason
+   - Implement the minimal code with exact implementation
+   - Run the test and confirm it passes
+   - Commit with descriptive message
+3. **Interfaces block**: If the task produces output consumed by later tasks, declare `Consumes` (inputs from earlier tasks) and `Produces` (outputs for later tasks) with exact function names, parameter types, and return types
+4. **Dependency declaration**: Each batch header states `Depends on: Batch N` if it consumes output from an earlier batch
 
-### Task Dependency Ordering
+**Granularity requirement**: Each task step MUST be completable in 2-5 minutes of focused work. This means:
+- A task step is one atomic operation: write one function, add one test case, update one config value
+- A task step is NOT "implement the authentication module" — that's a batch of steps
+- If a step takes longer than 5 minutes to describe, it should be decomposed further
 
-Tasks must be ordered so that:
+**Zero placeholder rule**: Tasks MUST NOT contain "TBD", "TODO", "implement later", "figure out", "add appropriate", "we'll decide", or similar placeholder language. Every task must be concrete and immediately actionable. If there is uncertainty, resolve it during specification — do not push it to implementation.
 
+**Task Dependency Ordering**: Tasks must be ordered so that:
 - Each task depends only on tasks listed before it
 - No task references work that hasn't been described yet
-- The dependency chain is explicit: "Depends on: Task 2.3"
+- The dependency chain is explicit: "Depends on: Batch N"
+- Every batch ends with a commit step
 
 ## Quality Bar
 
@@ -116,12 +134,16 @@ After creating or modifying any artifact, run these validation checks. Do not ha
 
 ### `tasks.md` Validation
 
+- [ ] Has `## File Structure` section listing all files with responsibilities
+- [ ] Has `## Interfaces` section with Consumes/Produces between batches
 - [ ] Tasks are numbered (1.1, 1.2, 2.1, etc.)
-- [ ] Each task is testable (can answer "how do I know this is done?")
-- [ ] Tasks are dependency-ordered (each task depends only on earlier tasks)
-- [ ] Each task is small enough for 2-5 min of focused work
+- [ ] Each task has exact file paths (Create/Modify with line ranges)
+- [ ] Each code-producing task has expanded TDD phases (5 steps)
+- [ ] Each task step is ≤ 5 minutes of focused work
 - [ ] No TBD, TODO, or placeholder language in any task
-- [ ] Every requirement from `specs/` maps to at least one task
+- [ ] Every requirement from specs/ maps to at least one task
+- [ ] Dependencies are explicit (Depends on: Batch N)
+- [ ] Every batch ends with a commit step
 
 ## Quality Gate
 
@@ -139,6 +161,10 @@ Before handing off:
 - [ ] Ensure design supports the required behavior — constraints don't block requirements
 - [ ] Run schema validation on all four artifacts — all checks pass
 - [ ] Verify task granularity — each task is 2-5 min, atomic, and concretely actionable
+- [ ] Verify File Structure — every file referenced in any task appears in the File Structure section
+- [ ] Verify Interfaces — every cross-batch dependency is declared in the Interfaces section
+- [ ] Verify zero placeholders — grep for TBD, TODO, "implement later", "figure out", "add appropriate"
+- [ ] Verify task granularity — each step is 2-5 min, atomic, concretely actionable
 
 ## Handoff Rule
 

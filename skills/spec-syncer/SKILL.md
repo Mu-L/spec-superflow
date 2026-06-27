@@ -18,6 +18,13 @@ After a spec-superflow change completes, its delta specs (ADDED/MODIFIED/REMOVED
 - When the user asks about spec consistency
 - When the workflow orchestrator detects stale main specs
 
+### Pre-Flight: Abandoned Change Guard
+
+Before syncing any delta specs:
+1. Check if the change is in the `abandoned` state
+2. If abandoned → STOP and report: "Abandoned changes cannot be synced. Delta specs from abandoned changes are preserved for reference but must not be merged into the main spec base."
+3. If not abandoned → proceed with normal sync flow
+
 ## The Sync Process
 
 ### Step 1: Identify Delta Specs

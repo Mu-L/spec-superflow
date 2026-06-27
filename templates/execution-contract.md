@@ -42,6 +42,21 @@
 - Required edge cases:
 - Regression-sensitive areas:
 
+## Execution Mode
+
+- **Mode**: `SDD` | `Inline`
+- **Selection rationale**: [why this mode was chosen — task count, dependency analysis]
+
+## Verification Dimensions
+
+| Dimension | Status | Findings |
+|-----------|--------|----------|
+| Completeness | Pending | — |
+| Correctness | Pending | — |
+| Coherence | Pending | — |
+
+**Overall verdict**: Pending
+
 ## Review Gates
 
 - Mandatory review points:

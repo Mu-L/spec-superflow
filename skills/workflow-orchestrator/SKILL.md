@@ -37,6 +37,7 @@ Use it whenever the correct next skill is not obvious from the current artifacts
 - `executing`
 - `debugging`
 - `closing`
+- `abandoned`
 
 Read `docs/state-machine.md` before making a state decision if the transition is ambiguous.
 
@@ -147,6 +148,13 @@ After debugging completes, route back to `execution-governor` to resume the exec
 - multiple changes have accumulated unsynced delta specs
 - the user asks about spec consistency
 
+### Route to `abandonment` when:
+
+- the user explicitly requests to abandon the change
+- systematic-debugger has escalated after 3+ consecutive fix failures AND the user chooses to abandon
+- scope change during specifying makes the change no longer worthwhile AND the user confirms abandonment
+- the current state is NOT `closing` or `abandoned` (terminal states block abandonment transition)
+
 ## Staleness Rules
 
 Treat `execution-contract.md` as stale if:
@@ -177,6 +185,11 @@ Treat planning artifacts as stale if:
 - Do not close a change with unsynced delta specs without routing to `spec-syncer`.
 - If the detected state is `debugging`, ensure `systematic-debugger` completes before routing back.
 - If the user asks to skip a review gate, explain why the gate exists and ask for confirmation.
+- Do not allow any state transitions FROM `abandoned` — it is a terminal state.
+- Do not allow transition to `abandoned` from `closing` or `abandoned` — these are already terminal.
+- Do not auto-abandon without user confirmation — even if systematic-debugger recommends it.
+- When transitioning to `abandoned`, prompt for abandonment summary generation before confirming.
+- Do not merge delta specs from an abandoned change — spec-syncer must block this.
 
 ## Output Standard
 

@@ -116,3 +116,63 @@ describe('Validator.validateChangeContent', () => {
     assert.equal(report.summary.errors, 0);
   });
 });
+
+describe('Validator.validateImplementation', () => {
+  const validator = new Validator();
+
+  it('returns VerificationReport with three dimensions', () => {
+    const report = validator.validateImplementation(
+      'Added auth middleware in src/middleware/auth.ts',
+      '### Requirement: Auth middleware\nThe system SHALL authenticate all API requests.\n#### Scenario: Valid token\n- **WHEN** a request has a valid token\n- **THEN** the system SHALL allow access',
+      '## Decisions\n### Decision 1\n- Choice: JWT-based auth\n- Rationale: stateless'
+    );
+    assert.ok(report.dimensions);
+    assert.equal(report.dimensions.length, 3);
+    const names = report.dimensions.map(d => d.name);
+    assert.ok(names.includes('Completeness'));
+    assert.ok(names.includes('Correctness'));
+    assert.ok(names.includes('Coherence'));
+    assert.ok(['PASS', 'FAIL', 'CONDITIONAL'].includes(report.verdict));
+  });
+
+  it('detects missing requirement in diff (Completeness FAIL)', () => {
+    const report = validator.validateImplementation(
+      'Added logging to src/utils/logger.ts',
+      '### Requirement: Auth middleware\nThe system SHALL authenticate all API requests.\n\n### Requirement: Rate limiting\nThe system SHALL limit requests to 100 per minute.',
+      '## Decisions\n### Decision 1\n- Choice: JWT\n- Rationale: stateless'
+    );
+    const completeness = report.dimensions.find(d => d.name === 'Completeness');
+    assert.ok(completeness);
+    assert.equal(completeness!.status, 'FAIL');
+    assert.ok(completeness!.findings.some(f => f.message.includes('Rate limiting')));
+  });
+
+  it('detects placeholder markers in diff (Correctness FAIL)', () => {
+    const report = validator.validateImplementation(
+      'Added auth middleware. TODO: implement rate limiting',
+      '### Requirement: Auth middleware\nThe system SHALL authenticate all API requests.',
+      '## Decisions\n### Decision 1\n- Choice: JWT\n- Rationale: stateless'
+    );
+    const correctness = report.dimensions.find(d => d.name === 'Correctness');
+    assert.equal(correctness!.status, 'FAIL');
+  });
+
+  it('passes when all requirements covered and no placeholders', () => {
+    const report = validator.validateImplementation(
+      'Added JWT auth middleware in src/middleware/auth.ts, rate limiter in src/middleware/rate-limit.ts',
+      '### Requirement: Auth middleware\nThe system SHALL authenticate all API requests.\n\n### Requirement: Rate limiting\nThe system SHALL limit requests to 100 per minute.',
+      '## Decisions\n### Decision 1\n- Choice: JWT-based auth\n- Rationale: stateless'
+    );
+    assert.equal(report.verdict, 'PASS');
+  });
+
+  it('detects coherence gaps when design decisions not in diff', () => {
+    const report = validator.validateImplementation(
+      'Added session-based auth in src/auth.ts',
+      '### Requirement: Auth middleware\nThe system SHALL authenticate all API requests.',
+      '## Decisions\n### Decision 1\n- Choice: JWT-based auth\n- Rationale: stateless'
+    );
+    const coherence = report.dimensions.find(d => d.name === 'Coherence');
+    assert.ok(coherence!.findings.length > 0);
+  });
+});

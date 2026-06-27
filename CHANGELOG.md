@@ -4,6 +4,26 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.3.0] - 2026-06-27
+
+### Added
+
+- **Inline execution mode** — Lightweight single-session execution for small changes (≤ 3 tasks, no cross-module dependencies). Parallel to SDD subagent mode. Preserves TDD Iron Law with checkpoint review per task. Automatic mode selection with user override.
+- **Abandoned terminal state** — 8th workflow state allowing graceful change abandonment from any non-terminal state. Generates `abandonment-summary.md` with reason, lessons learned, and recommendations. Blocks delta spec merge for abandoned changes. Partial code preservation supported.
+- **Three-dimensional verification** — closure-archivist now verifies Completeness (all tasks/requirements implemented), Correctness (tests pass, no placeholders), and Coherence (design decisions reflected in code). New `Validator.validateImplementation()` API with word-stemming and keyword matching.
+- **abandonment-summary.md template** — Structured template for documenting abandoned changes.
+- **Verification types** — New exports: `VerificationDimension`, `VerificationStatus`, `VerificationFinding`, `VerificationReport`.
+
+### Changed
+
+- **spec-forger task planning** — Rewritten with writing-plans methodology: File Structure section, Interfaces block (Consumes/Produces), per-task TDD expansion (5 phases), exact file paths with line ranges, zero placeholder enforcement, 2-5 minute granularity per step.
+- **execution-contract.md template** — Added Execution Mode (SDD | Inline) selection field and Verification Dimensions table.
+- **tasks.md template** — Added File Structure and Interfaces sections for cross-batch dependency tracking.
+- **State machine** — Extended from 7 to 8 states (+abandoned terminal state). Universal abandoned transition from any non-terminal state.
+- **Validator engine** — New `validateImplementation(diffSummary, specContent, designContent)` method with three-dimensional `VerificationReport` return type. Word-stemming for Completeness matching, keyword-based Coherence checking.
+- **closure-archivist** — Verification steps expanded from 3 to 5 (Correctness, Completeness, Coherence, Unintended Scope Detection, Verification Report). Structured output with PASS/CONDITIONAL/FAIL verdict.
+- **spec-syncer** — Pre-flight guard blocks sync for abandoned changes.
+
 ## [0.2.1] - 2026-06-27
 
 ### Fixed

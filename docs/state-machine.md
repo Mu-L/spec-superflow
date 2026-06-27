@@ -53,6 +53,18 @@
 - `spec-syncer` invoked if delta specs need merging into main specs
 - the change can be summarized, archived, or handed off
 
+### `abandoned`
+
+- the change has been abandoned by the user or after systematic-debugger escalation
+- no delta spec merge is allowed
+- no further state transitions are allowed
+- delta specs are preserved for reference only
+
+## Terminal States
+
+- `closing` — successful completion with verification
+- `abandoned` — change abandoned (no delta spec merge, no further transitions allowed)
+
 ## Transitions
 
 ```text
@@ -65,6 +77,9 @@ exploring -> specifying -> bridging -> approved-for-build -> executing -> closin
                 |              (contract drift → re-bridge)
                 +---------------------------------------------------+
                      (scope change → re-specify)
+
+  (any non-terminal state) ──> abandoned
+                                (terminal, no further transitions)
 ```
 
 ## Mandatory Rewind

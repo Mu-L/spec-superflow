@@ -96,30 +96,51 @@ Read:
 
 ## Verification Steps
 
-### Step 1: Test Suite Verification
+### Step 1: Test Suite Verification (Correctness)
 
-Run the test suite for the affected code. Record:
+Run the full test suite. Record:
+- Total tests, passed, failed, skipped
+- Zero failures required for PASS
+- Any failure = CRITICAL finding in Correctness dimension
 
-- Number of tests run
-- Number of tests passed/failed
-- Any warnings or noise in test output (test output must be pristine)
+### Step 2: Completeness Verification
 
-### Step 2: Contract Obligation Check
+Compare the execution contract's task batches against the actual diff:
+1. List all tasks from the execution contract
+2. For each task, verify a corresponding code change exists in the diff
+3. For each SHALL/MUST requirement in specs, verify at least one implementation artifact
+4. Missing items = CRITICAL findings in Completeness dimension
 
-Compare each obligation in `execution-contract.md` against the implementation:
+### Step 3: Coherence Verification
 
-- [ ] Each test obligation has a passing test
-- [ ] Each batch has its "Done when" criteria satisfied
-- [ ] Each review gate was passed
-- [ ] No scope was added without artifact updates
+Compare design.md decisions against the implementation:
+1. Extract each decision's Choice from design.md
+2. Verify the choice is reflected in the code (naming, patterns, architecture)
+3. Check naming consistency between specs and implementation
+4. Inconsistencies = IMPORTANT findings in Coherence dimension
 
-### Step 3: Unintended Scope Detection
+### Step 4: Unintended Scope Detection
 
-Check the diff for changes beyond what the contract approves:
+Check the diff for unplanned changes:
+- Files modified that are not in the execution contract's scope fence
+- New dependencies added that are not in the design's constraints
+- Unplanned changes = WARN findings in Completeness dimension
 
-- [ ] No new files outside the planned scope
-- [ ] No modified files that weren't part of the change
-- [ ] No new configuration without corresponding spec updates
+### Step 5: Verification Report
+
+Produce a structured report:
+
+| Dimension | Status | Findings |
+|-----------|--------|----------|
+| Completeness | PASS/FAIL/WARN | [list] |
+| Correctness | PASS/FAIL/WARN | [list] |
+| Coherence | PASS/FAIL/WARN | [list] |
+
+**Overall verdict**: PASS (all PASS) / CONDITIONAL (WARN only) / FAIL (any FAIL)
+
+If FAIL → do not claim completion. Fix issues or route back to execution-governor.
+If CONDITIONAL → present WARN findings to user, proceed only with explicit acceptance.
+If PASS → proceed to final checks.
 
 ## Final Checks
 
@@ -132,18 +153,12 @@ Check the diff for changes beyond what the contract approves:
 
 ## Output
 
-Produce a concise wrap-up with:
-
-- delivered behavior (with verification evidence cited)
-- notable implementation constraints
-- residual risks
-- recommended next action
-
-Also make clear whether the change is:
-
-- ready to archive
-- ready for user review
-- blocked on follow-up work
+1. Verification report table (three dimensions with status and findings)
+2. Overall verdict
+3. If PASS: summary of all contract obligations met
+4. If CONDITIONAL: list of accepted warnings
+5. Risks and follow-ups
+6. Archive readiness assessment
 
 ## Archive Rule
 

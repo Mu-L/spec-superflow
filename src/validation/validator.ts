@@ -1,4 +1,5 @@
 import { ValidationReport, ValidationIssue, ValidationLevel } from './types.js';
+import type { VerificationReport, VerificationFinding } from './types.js';
 import {
   MIN_PURPOSE_LENGTH,
   MIN_WHY_SECTION_LENGTH,
@@ -6,6 +7,7 @@ import {
   MAX_REQUIREMENT_TEXT_LENGTH,
   MAX_DELTAS_PER_CHANGE,
   VALIDATION_MESSAGES,
+  VERIFICATION_MESSAGES,
 } from './constants.js';
 import {
   parseDeltaSpec,
@@ -40,6 +42,42 @@ function extractSection(content: string, heading: string): string | undefined {
 
 function containsShallOrMust(text: string): boolean {
   return /\b(SHALL|MUST)\b/.test(text);
+}
+
+/**
+ * Lightweight English stemmer used to normalize requirement / decision keywords
+ * before comparing against diff words. Strips only the most common suffixes
+ * (-ing, -er, -ed, -s, -tion) so that natural variations like
+ * "limiting" / "limiter" / "limit" collapse to the same stem.
+ *
+ * Intentionally conservative — false-negative matching (missing a coverage gap)
+ * is preferred over false-positive (falsely claiming a requirement is covered).
+ */
+function stem(word: string): string {
+  const w = word.toLowerCase();
+  if (w.length <= 3) return w;
+  // Longer suffixes first so "ting" strips before "ing", "tion" before "ion", etc.
+  const suffixes: Array<[string, number]> = [
+    ['ation', 3], ['tion', 3], ['ness', 3], ['ment', 3],
+    ['ings', 3], ['ally', 3],
+    ['ing', 3], ['ier', 3], ['ied', 3], ['ies', 3],
+    ['ted', 3], ['ned', 3], ['red', 3], ['sed', 3], ['led', 3],
+    ['ped', 3], ['ded', 3], ['ved', 3], ['wed', 3], ['xed', 3],
+    ['zed', 3], ['ced', 3], ['ged', 3], ['ked', 3],
+    ['ers', 3], ['ors', 3],
+    ['ary', 3], ['ory', 3], ['ity', 3], ['ism', 3], ['ist', 3],
+    ['ent', 3], ['ant', 3], ['ous', 3], ['ive', 3], ['ful', 3],
+    ['ly', 3], ['ed', 3], ['er', 3], ['es', 3],
+    ['al', 3], ['en', 3], ['ty', 3], ['or', 3], ['ar', 3],
+    ['ry', 3], ['ic', 3], ['id', 3],
+  ];
+  for (const [suffix, minRoot] of suffixes) {
+    if (w.endsWith(suffix) && w.length - suffix.length >= minRoot) {
+      return w.slice(0, -suffix.length);
+    }
+  }
+  if (w.endsWith('s') && w.length > 4) return w.slice(0, -1);
+  return w;
 }
 
 function countScenarios(blockRaw: string): number {
@@ -411,6 +449,117 @@ export class Validator {
     }
 
     return createReport(issues, this.strictMode);
+  }
+
+  validateImplementation(
+    diffSummary: string,
+    specContent: string,
+    designContent: string
+  ): VerificationReport {
+    const dimensions: VerificationReport['dimensions'] = [];
+
+    // --- Completeness ---
+    const completenessFindings: VerificationFinding[] = [];
+    const requirements = this.extractRequirementNames(specContent);
+    const diffWords = new Set(
+      diffSummary.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 0).map(stem)
+    );
+    for (const req of requirements) {
+      // A requirement is considered covered when every significant word (stemmed) appears
+      // somewhere in the diff. This handles natural variations like "Rate limiting" vs
+      // "rate limiter" / "rate-limit.ts" without requiring exact substring matches.
+      const keywords = req
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(w => w.length > 3);
+      const allPresent = keywords.length === 0 || keywords.every(kw => diffWords.has(stem(kw)));
+      if (!allPresent) {
+        completenessFindings.push({
+          level: 'CRITICAL',
+          dimension: 'Completeness',
+          message: VERIFICATION_MESSAGES.COMPLETENESS_MISSING_REQUIREMENT.replace('{requirement}', req),
+        });
+      }
+    }
+    dimensions.push({
+      name: 'Completeness',
+      status: completenessFindings.some(f => f.level === 'CRITICAL') ? 'FAIL' : completenessFindings.length > 0 ? 'WARN' : 'PASS',
+      findings: completenessFindings,
+    });
+
+    // --- Correctness ---
+    const correctnessFindings: VerificationFinding[] = [];
+    const placeholderPatterns = ['TODO', 'FIXME', 'HACK', 'XXX', 'PLACEHOLDER'];
+    for (const pattern of placeholderPatterns) {
+      if (diffSummary.includes(pattern)) {
+        correctnessFindings.push({
+          level: 'CRITICAL',
+          dimension: 'Correctness',
+          message: VERIFICATION_MESSAGES.VERIFICATION_PLACEHOLDER_DETECTED,
+        });
+        break;
+      }
+    }
+    dimensions.push({
+      name: 'Correctness',
+      status: correctnessFindings.some(f => f.level === 'CRITICAL') ? 'FAIL' : correctnessFindings.length > 0 ? 'WARN' : 'PASS',
+      findings: correctnessFindings,
+    });
+
+    // --- Coherence ---
+    const coherenceFindings: VerificationFinding[] = [];
+    const decisionNames = this.extractDecisionNames(designContent);
+    const diffLower = diffSummary.toLowerCase();
+    const fillerWords = new Set(['based', 'with', 'the', 'a', 'an', 'of', 'for', 'and', 'or', 'in', 'on', 'to', 'by', 'as']);
+    for (const name of decisionNames) {
+      if (name.length <= 3) continue;
+      // Check that every significant word from the decision name appears in the diff.
+      // This allows "JWT-based auth" to match "JWT auth middleware" (design naming ≠ exact diff substring).
+      const keywords = name
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(w => w.length > 0 && !fillerWords.has(w));
+      const allPresent = keywords.length === 0 || keywords.every(kw => diffLower.includes(kw));
+      if (!allPresent) {
+        coherenceFindings.push({
+          level: 'IMPORTANT',
+          dimension: 'Coherence',
+          message: VERIFICATION_MESSAGES.COHERENCE_PATTERN_MISSING.replace('{pattern}', name),
+        });
+      }
+    }
+    dimensions.push({
+      name: 'Coherence',
+      status: coherenceFindings.some(f => f.level === 'CRITICAL') ? 'FAIL' : coherenceFindings.length > 0 ? 'WARN' : 'PASS',
+      findings: coherenceFindings,
+    });
+
+    // --- Verdict ---
+    const hasCritical = dimensions.some(d => d.status === 'FAIL');
+    const hasWarning = dimensions.some(d => d.status === 'WARN');
+    const verdict: VerificationReport['verdict'] = hasCritical ? 'FAIL' : hasWarning ? 'CONDITIONAL' : 'PASS';
+
+    return { dimensions, verdict };
+  }
+
+  private extractRequirementNames(specContent: string): string[] {
+    const regex = /### Requirement:\s*(.+)/g;
+    const names: string[] = [];
+    let match;
+    while ((match = regex.exec(specContent)) !== null) {
+      names.push(match[1].trim());
+    }
+    return names;
+  }
+
+  private extractDecisionNames(designContent: string): string[] {
+    const regex = /- Choice:\s*(.+)/g;
+    const names: string[] = [];
+    let match;
+    while ((match = regex.exec(designContent)) !== null) {
+      names.push(match[1].trim());
+    }
+    return names;
   }
 
   isValid(report: ValidationReport): boolean {

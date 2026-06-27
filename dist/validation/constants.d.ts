@@ -28,3 +28,14 @@ export declare const VALIDATION_MESSAGES: {
     readonly GUIDE_MISSING_CHANGE_SECTIONS: "Missing required sections. Expected headers: \"## Why\" and \"## What Changes\". Ensure deltas are documented in specs/ using delta headers.";
     readonly GUIDE_SCENARIO_FORMAT: "Scenarios must use level-4 headers. Convert bullet lists into:\n#### Scenario: Short name\n- **WHEN** ...\n- **THEN** ...\n- **AND** ...";
 };
+export declare const VERIFICATION_DIMENSIONS: readonly ["Completeness", "Correctness", "Coherence"];
+export declare const VERIFICATION_MESSAGES: {
+    readonly COMPLETENESS_MISSING_TASK: "Task in tasks.md has no corresponding code change in diff summary";
+    readonly COMPLETENESS_MISSING_REQUIREMENT: "SHALL/MUST requirement in spec has no matching implementation in diff summary: {requirement}";
+    readonly CORRECTNESS_TEST_FAILURE: "Test suite has failures";
+    readonly CORRECTNESS_MISSING_SCENARIO: "Spec scenario has no corresponding test assertion";
+    readonly COHERENCE_NAMING_MISMATCH: "Design decision naming does not match implementation naming";
+    readonly COHERENCE_PATTERN_MISSING: "Architecture pattern from design.md not found in implementation: {pattern}";
+    readonly VERIFICATION_PLACEHOLDER_DETECTED: "Diff summary contains placeholder markers (TODO, FIXME, HACK)";
+};
+export declare const MIN_ABANDONMENT_REASON_LENGTH = 50;

@@ -14,3 +14,18 @@ export interface ValidationReport {
         info: number;
     };
 }
+export type VerificationDimension = 'Completeness' | 'Correctness' | 'Coherence';
+export type VerificationStatus = 'PASS' | 'FAIL' | 'WARN';
+export interface VerificationFinding {
+    level: 'CRITICAL' | 'IMPORTANT' | 'INFO';
+    dimension: VerificationDimension;
+    message: string;
+}
+export interface VerificationReport {
+    dimensions: {
+        name: VerificationDimension;
+        status: VerificationStatus;
+        findings: VerificationFinding[];
+    }[];
+    verdict: 'PASS' | 'CONDITIONAL' | 'FAIL';
+}

@@ -1,27 +1,47 @@
 # Implementation Tasks
 
-## 1. Planning Alignment
+## File Structure
 
-- [ ] 1.1 Confirm proposal, specs, and design are consistent
-- [ ] 1.2 Identify the first execution batch
+- `Create: path/to/new-file.ts` — One-sentence responsibility
+- `Modify: path/to/existing.ts` — What changes and why
 
-## 2. Batch 1
+## Interfaces
 
-- [ ] 2.1 Write the failing test
-- [ ] 2.2 Run the test and confirm it fails for the expected reason
-- [ ] 2.3 Implement the minimal code required
-- [ ] 2.4 Run the test suite and confirm the batch is green
-- [ ] 2.5 Review the batch against the execution contract
+### Batch N → Batch M
+- **Produces**: `type/function name` — consumed by Batch M for purpose
 
-## 3. Batch 2
+## 1. Batch 1: [Batch Objective]
 
-- [ ] 3.1 Write the next failing test
-- [ ] 3.2 Run the test and confirm it fails for the expected reason
-- [ ] 3.3 Implement the next minimal code path
-- [ ] 3.4 Run tests and confirm the batch is green
-- [ ] 3.5 Review the batch against the execution contract
+- [ ] **1.1 Write the failing test**
 
-## 4. Closeout
+```language
+// test code with exact assertions
+```
 
-- [ ] 4.1 Verify all contract obligations are satisfied
-- [ ] 4.2 Summarize risks, follow-ups, and archive readiness
+**Files**: `Create/Modify: exact/path`
+
+- [ ] **1.2 Run test and confirm it fails**
+
+Run: `exact command`
+Expected: FAIL with "specific error message"
+
+- [ ] **1.3 Implement minimal code**
+
+```language
+// implementation code
+```
+
+**Files**: `Create/Modify: exact/path`
+**Interfaces**: Produces `name(type): returnType` — consumed by Batch N
+
+- [ ] **1.4 Run test and confirm it passes**
+
+Run: `exact command`
+Expected: PASS
+
+- [ ] **1.5 Commit**
+
+```bash
+git add files
+git commit -m "feat: description"
+```

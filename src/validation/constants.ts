@@ -36,3 +36,17 @@ export const VALIDATION_MESSAGES = {
   GUIDE_SCENARIO_FORMAT:
     'Scenarios must use level-4 headers. Convert bullet lists into:\n#### Scenario: Short name\n- **WHEN** ...\n- **THEN** ...\n- **AND** ...',
 } as const;
+
+export const VERIFICATION_DIMENSIONS = ['Completeness', 'Correctness', 'Coherence'] as const;
+
+export const VERIFICATION_MESSAGES = {
+  COMPLETENESS_MISSING_TASK: 'Task in tasks.md has no corresponding code change in diff summary',
+  COMPLETENESS_MISSING_REQUIREMENT: 'SHALL/MUST requirement in spec has no matching implementation in diff summary: {requirement}',
+  CORRECTNESS_TEST_FAILURE: 'Test suite has failures',
+  CORRECTNESS_MISSING_SCENARIO: 'Spec scenario has no corresponding test assertion',
+  COHERENCE_NAMING_MISMATCH: 'Design decision naming does not match implementation naming',
+  COHERENCE_PATTERN_MISSING: 'Architecture pattern from design.md not found in implementation: {pattern}',
+  VERIFICATION_PLACEHOLDER_DETECTED: 'Diff summary contains placeholder markers (TODO, FIXME, HACK)',
+} as const;
+
+export const MIN_ABANDONMENT_REASON_LENGTH = 50;
