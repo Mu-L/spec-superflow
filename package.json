@@ -4,6 +4,10 @@
   "description": "Spec-first workflow: integrates OpenSpec planning engine + Superpowers execution discipline via bridge contract. 9 collaborative skills, 7-platform support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "ssf": "./scripts/spec-superflow.mjs",
+    "spec-superflow": "./scripts/spec-superflow.mjs"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
