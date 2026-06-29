@@ -2,6 +2,13 @@
 
 `spec-superflow` is a self-contained plugin. You do not need to install OpenSpec or Superpowers at runtime.
 
+Source lineage:
+
+- [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec)
+- [obra/superpowers](https://github.com/obra/superpowers)
+
+Current release: `v0.6.0`. This repo tracks `spec-superflow` versions, not runtime dependency versions for the upstream projects.
+
 ## Claude Code
 
 ### Marketplace Install（推荐）
@@ -55,12 +62,16 @@ Cursor 会自动发现 `.cursor-plugin/` 目录下的插件。
 
 搜索 `spec-superflow`，选择 Install Plugin。
 
+如果暂时搜不到，请先刷新插件列表或重启 Codex CLI，再重新搜索。
+
 ## OpenAI Codex App
 
 在 Codex App 中：
 - 点击侧边栏的 **Plugins**
 - 在 Coding 分类中找到 **spec-superflow**
 - 点击 `+` 安装
+
+如果暂时搜不到，请重开 Plugins 面板或确认客户端已经更新到支持插件目录索引的版本。
 
 ## OpenCode
 
@@ -100,6 +111,21 @@ git clone https://github.com/MageByte-Zero/spec-superflow.git
 mkdir -p ~/.trae/skills
 cp -R spec-superflow/skills/* ~/.trae/skills/
 ```
+
+## Qoder / Trae CN / Other Local Skill Clients
+
+If your client can point to a local `skills/` directory, use the same repository clone and map `spec-superflow/skills` into the client-specific skill location.
+
+Typical flow:
+
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git
+```
+
+Then configure your client to load skills from:
+
+- `<repo>/skills`
+- or a client-specific local skills directory that symlinks/copies from `<repo>/skills`
 
 ---
 

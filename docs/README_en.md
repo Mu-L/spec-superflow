@@ -164,7 +164,9 @@ In concrete terms:
 
 ## Install
 
-Supports **Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae** — 7 platforms.
+Supports **Claude Code / Cursor / OpenAI Codex CLI / OpenAI Codex App / OpenCode / GitHub Copilot CLI / Gemini CLI / Trae**.
+
+Any client that can load a local `skills/` directory can use the same repository clone flow, including Qoder and Trae CN.
 
 **Claude Code:**
 
@@ -177,6 +179,37 @@ Supports **Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / 
 
 ```
 /add-plugin spec-superflow
+```
+
+**OpenAI Codex CLI:**
+
+```
+/plugins
+```
+
+If the plugin does not show up right away, refresh the plugin list or restart Codex CLI and search again.
+
+**OpenAI Codex App:**
+
+- Open the **Plugins** panel in the sidebar
+- Find **spec-superflow** under Coding
+- Click `+` to install
+
+If it still does not appear, reopen the Plugins panel or make sure the client version supports plugin catalog indexing.
+
+**OpenCode:**
+
+```json
+{
+  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git"]
+}
+```
+
+**GitHub Copilot CLI:**
+
+```
+copilot plugin marketplace add MageByte-Zero/spec-superflow
+copilot plugin install spec-superflow@spec-superflow
 ```
 
 **Gemini CLI:**
@@ -201,6 +234,12 @@ All install methods: [INSTALL.md](INSTALL.md)
 2. Create or choose a change workspace under `workflow/changes/<change-name>/`.
 3. Start from `workflow-orchestrator`.
 4. Let the workflow move through exploration, specification, bridging, execution, and closure.
+
+## Version Notes
+
+- Current release: `v0.6.0`
+- `spec-superflow` is self-contained and does not require runtime installation of OpenSpec or Superpowers
+- Upstream source projects: [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) and [obra/superpowers](https://github.com/obra/superpowers)
 
 ## How To Use
 
