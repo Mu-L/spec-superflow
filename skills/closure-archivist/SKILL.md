@@ -187,3 +187,14 @@ Your response should include:
 4. residual risks
 5. delta spec status (exist or not)
 6. recommended routing (to `spec-syncer` or archive)
+
+## Lightweight Closure (hotfix/tweak mode)
+
+When workflow is `hotfix` or `tweak`, closure-archivist performs lightweight verification:
+1. Verify all changed files exist and are non-empty
+2. Run syntax check on code files (`node --check` for .mjs/.js)
+3. Skip the full 5-step three-dimensional verification
+4. Still record DP-6 (验证失败) and DP-7 (归档确认) decision points
+5. Delta specs are NOT generated in lightweight closure (no specs to sync)
+
+Reference: `docs/decision-points.md` → DP-6, DP-7

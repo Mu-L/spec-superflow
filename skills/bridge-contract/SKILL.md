@@ -173,6 +173,19 @@ Refresh the contract if any of the following are true:
 - execution batches changed materially in `tasks.md`
 - the current contract no longer matches what the team intends to build
 
+## Hotfix Mode: Minimal Contract
+
+When workflow is `hotfix`, generate a minimal execution-contract.md containing only:
+1. **Intent Lock** — one-sentence description of the change intent
+2. **Task List** — numbered list of tasks to complete
+3. **Approval Gate** — DP-3 prompt for user confirmation
+
+Skip: Scope Fence, Build Rules, Review Gates, Test Evidence requirements.
+
+The minimal contract still requires explicit user approval (DP-3) before execution begins.
+
+Reference: `docs/decision-points.md` → DP-3
+
 ## Guardrails
 
 - Do not continue to implementation if major ambiguity remains.

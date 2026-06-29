@@ -263,6 +263,18 @@ During implementation, keep reporting against the contract:
 
 If drift appears, stop and route backward instead of improvising new behavior.
 
+## Tweak Mode: Direct Edit
+
+When workflow is `tweak`, execution-governor operates in direct edit mode:
+1. Skip TDD Iron Law (no test-first requirement for config/doc changes)
+2. Apply changes directly to target files
+3. Verify file integrity after each change (file exists, non-empty, valid syntax)
+4. No batch-based execution — apply all changes in sequence
+5. Reference DP-4 for execution mode confirmation
+6. Reference DP-5 for debug escalation if changes fail
+
+Reference: `docs/decision-points.md` → DP-4, DP-5
+
 ## Completion Standard
 
 Do not report completion until:

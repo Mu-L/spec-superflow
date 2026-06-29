@@ -70,6 +70,20 @@ Before routing, check project configuration:
 - Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.skip`
 - If artifacts are in the skip list, do not require them for state transitions
 
+## Mode Detection
+
+Before routing, check the workflow mode:
+1. Run: `ssf state get <change-dir> workflow`
+2. If workflow is `full` or unset → standard routing (no changes)
+3. If workflow is `hotfix`:
+   - Validate: ≤2 files? No new modules? No schema changes?
+   - All pass → use hotfix fast-path routing
+   - Any fail → upgrade to `full`, run `ssf state set <dir> workflow full`, output upgrade reason
+4. If workflow is `tweak`:
+   - Validate: ≤4 files? Single module? Config/doc/prompt only?
+   - All pass → use tweak fast-path routing
+   - Any fail → upgrade to `full`, run `ssf state set <dir> workflow full`, output upgrade reason
+
 ## Enhanced Stale Detection via Content Inspection
 
 Do not rely solely on file existence to determine staleness. Inspect file **contents** to detect drift:
@@ -175,6 +189,29 @@ After debugging completes, route back to `execution-governor` to resume the exec
 - scope change during specifying makes the change no longer worthwhile AND the user confirms abandonment
 - the current state is NOT `closing` or `abandoned` (terminal states block abandonment transition)
 
+### Hotfix Fast-Path Routing
+
+When workflow is `hotfix`:
+- Route to `bridge-contract` with minimal contract mode (intent + task list only)
+- Skip `spec-explorer` and full `spec-forger`
+- Guard check: `node scripts/guard/guard.mjs check <dir> exploring bridging --workflow hotfix --json`
+- After bridge: DP-3 契约批准
+- After approval: route to `execution-governor` (inline mode)
+- After execution: route to `closure-archivist` (lightweight closure)
+
+### Tweak Fast-Path Routing
+
+When workflow is `tweak`:
+- Route directly to `execution-governor` (direct edit mode)
+- Skip `spec-explorer`, `spec-forger`, and `bridge-contract`
+- Guard check: `node scripts/guard/guard.mjs check <dir> exploring approved --workflow tweak --json`
+- After execution: route to `closure-archivist` (lightweight closure: file exists + syntax check)
+
+### Post-Transition Injection Prompt
+
+After every successful `ssf state transition`, output:
+> 💡 Run `ssf inject <change-dir>` to update phase-guard.md with the new state.
+
 ## Staleness Rules
 
 Treat `execution-contract.md` as stale if:
@@ -222,6 +259,16 @@ Your response should always make three things explicit:
 If transition blocking is required, explain the missing artifact or approval clearly.
 
 If content-level inspection was performed, include a brief note on what was compared (e.g., "Compared proposal scope (3 capabilities) against contract intent lock (2 capabilities) — contract is stale").
+
+### Decision Point References
+
+When routing to a skill that has an associated decision point, include the decision point number in the output:
+- Route to bridge-contract → include `DP-3: 契约批准 — 用户需明确批准 execution-contract.md`
+- Route to execution-governor → include `DP-4: 执行模式选择 — 用户选择 TDD 或 SDD`
+- Route to systematic-debugger (escalation) → include `DP-5: 调试升级`
+- Route to closure-archivist → include `DP-7: 归档确认`
+
+Reference: `docs/decision-points.md`
 
 ## Preferred User Experience
 
