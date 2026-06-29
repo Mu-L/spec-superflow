@@ -11,3 +11,5 @@ export type { RequirementBlock, RequirementsSectionParts, DeltaPlan } from './pa
 export { REQUIREMENT_HEADER_REGEX, normalizeRequirementName, extractRequirementsSection, parseDeltaSpec } from './parsing/requirement-blocks.js';
 export type { ParsedDelta, ParsedChange } from './parsing/change-parser.js';
 export { parseChangeMarkdown } from './parsing/change-parser.js';
+
+export { tokenize, detectLanguage } from './validation/tokenizer.js';

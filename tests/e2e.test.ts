@@ -8,6 +8,8 @@ import {
   parseDeltaSpec,
   parseChangeMarkdown,
   Validator,
+  tokenize,
+  detectLanguage,
 } from '../dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -174,5 +176,30 @@ describe('Validator.validateImplementation', () => {
     );
     const coherence = report.dimensions.find(d => d.name === 'Coherence');
     assert.ok(coherence!.findings.length > 0);
+  });
+});
+
+describe('tokenize', () => {
+  it('tokenizes English text with stemming', () => {
+    const tokens = tokenize('Rate limiting middleware implementation', 'en');
+    assert.ok(tokens.has('limit'), `Expected "limit" in tokens: ${[...tokens].join(', ')}`);
+    assert.ok(tokens.has('rate'), `Expected "rate" in tokens: ${[...tokens].join(', ')}`);
+    assert.ok(tokens.has('middleware'), `Expected "middleware" in tokens: ${[...tokens].join(', ')}`);
+    assert.ok(tokens.has('implement'), `Expected "implement" in tokens: ${[...tokens].join(', ')}`);
+  });
+
+  it('tokenizes Chinese text with CJK extraction', () => {
+    const tokens = tokenize('速率限制模块必须支持令牌桶算法', 'zh');
+    assert.ok(tokens.size > 0, 'Expected non-empty token set for Chinese text');
+    assert.ok(tokens.has('速率'), `Expected "速率" in tokens: ${[...tokens].join(', ')}`);
+    assert.ok(tokens.has('限制'), `Expected "限制" in tokens: ${[...tokens].join(', ')}`);
+    assert.ok(tokens.has('令牌'), `Expected "令牌" in tokens: ${[...tokens].join(', ')}`);
+  });
+
+  it('auto-detects language from text content', () => {
+    assert.equal(detectLanguage('Rate limiting middleware implementation'), 'en');
+    assert.equal(detectLanguage('速率限制模块必须支持令牌桶算法'), 'zh');
+    const mixed = detectLanguage('使用 Redis 实现速率限制模块的令牌桶算法');
+    assert.ok(['zh', 'mixed'].includes(mixed), `Expected zh or mixed, got: ${mixed}`);
   });
 });
