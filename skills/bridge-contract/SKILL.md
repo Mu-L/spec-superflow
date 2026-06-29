@@ -183,6 +183,14 @@ Refresh the contract if any of the following are true:
 - Do not write production code inside this skill.
 - If the coverage cross-check reveals unmapped requirements, flag them explicitly in the contract and in the approval summary.
 
+## After Contract Generation
+
+After `execution-contract.md` is written and validated:
+
+1. Run: `node scripts/spec-superflow.mjs state init <change-dir>`
+2. This creates `.spec-superflow.yaml` with `artifacts_hash` and `contract_hash`
+3. The state file enables fast staleness detection in subsequent phases
+
 ## Output Standard
 
 Your response should include:

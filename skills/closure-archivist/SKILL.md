@@ -170,8 +170,10 @@ If implementation diverged from the contract, return to `bridging` before closur
 
 After verification completes:
 
-1. If delta specs were created (new specs in the change folder, or specs with ADDED/MODIFIED/REMOVED/RENAMED markers), route to `spec-syncer` before archiving
-2. If no delta specs exist, the change is ready to archive
+1. Run: `node scripts/spec-superflow.mjs state transition <change-dir> closing`
+2. This updates `.spec-superflow.yaml` with `state: closing` and records the transition
+3. If delta specs were created, route to `spec-syncer` before final archiving
+4. If no delta specs exist, the change is ready to archive
 
 The closure is not complete until delta specs are merged. Specs that aren't synced become lies.
 

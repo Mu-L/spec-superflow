@@ -11,6 +11,7 @@ const COMMANDS = {
   version:  () => import('./lib/cmd-version.mjs'),
   sync:     () => import('./lib/cmd-sync.mjs'),
   config:   () => import('./lib/cmd-config.mjs'),
+  state:    () => import('./lib/cmd-state.mjs'),
 };
 
 const HELP = `spec-superflow (ssf) — Spec-first workflow CLI
@@ -24,6 +25,7 @@ Commands:
   version <semver>      Sync version to all manifest files
   sync <change-dir>     Merge delta specs into main specs
   config [options]      Display or modify configuration
+  state <sub> <dir>     Manage .spec-superflow.yaml state (init|check|transition|get|rebuild)
 
 Options:
   --help, -h            Show this help message
@@ -37,6 +39,10 @@ Examples:
   ssf sync changes/v0.3.0-workflow-enhancements/
   ssf config --get execution.inlineThreshold
   ssf config --set verification.language=zh
+  ssf state init changes/my-change/
+  ssf state check changes/my-change/
+  ssf state transition changes/my-change/ approved
+  ssf state get changes/my-change/ batches_completed
 `;
 
 async function main() {

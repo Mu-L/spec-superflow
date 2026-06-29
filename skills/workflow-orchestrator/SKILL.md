@@ -109,12 +109,18 @@ Compare the proposal's scope against spec files:
 
 ### Route to `spec-forger` when:
 
+- **Guard check**: If a change directory exists, run `node scripts/guard/guard.mjs check <dir> exploring specifying --json`
+  - If exit code ≠ 0 → BLOCK. Report failures, do not route.
+  - If exit code = 0 → proceed.
 - the user knows what they want
 - planning artifacts are missing or incomplete
 - proposal, specs, design, or tasks need to be created or revised
 
 ### Route to `bridge-contract` when:
 
+- **Guard check**: Run `node scripts/guard/guard.mjs check <dir> specifying bridging --json`
+  - If exit code ≠ 0 → BLOCK. Report failures (missing artifacts or schema validation errors), do not route.
+  - If exit code = 0 → proceed.
 - planning artifacts exist
 - implementation is requested or about to begin
 - the execution contract is missing or stale
@@ -122,6 +128,9 @@ Compare the proposal's scope against spec files:
 
 ### Route to `execution-governor` when:
 
+- **Guard check**: Run `node scripts/guard/guard.mjs check <dir> approved executing --json`
+  - If exit code ≠ 0 → BLOCK. Report failures (contract stale or artifacts missing), do not route.
+  - If exit code = 0 → proceed.
 - `execution-contract.md` exists
 - the user has explicitly approved it
 - implementation is the active task
@@ -145,6 +154,9 @@ After debugging completes, route back to `execution-governor` to resume the exec
 
 ### Route to `closure-archivist` when:
 
+- **Guard check**: Run `node scripts/guard/guard.mjs check <dir> executing closing --json`
+  - If exit code ≠ 0 → BLOCK. Report failures (unfinished tasks or missing test evidence), do not route.
+  - If exit code = 0 → proceed.
 - implementation is complete
 - verification is complete or nearly complete
 - the user wants a final summary, archive, or wrap-up

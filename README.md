@@ -280,6 +280,11 @@ npx spec-superflow list
 | `ssf version <semver>` | 一键同步版本号到所有 manifest |
 | `ssf sync <change-dir>` | delta spec → main spec 合并（含冲突检测） |
 | `ssf config` | 显示/修改项目配置 |
+| `ssf state init <dir>` | 初始化 `.spec-superflow.yaml` 状态文件（含工件哈希） |
+| `ssf state check <dir>` | 检查状态文件与工件一致性 |
+| `ssf state transition <dir> <to>` | 记录状态转换 |
+| `ssf state get <dir> <field>` | 读取单个状态字段 |
+| `ssf state rebuild <dir>` | 从工件重建状态文件 |
 
 配置系统支持可选的 `spec-superflow.config.json`，可自定义工件顺序、跳过工件、调整阈值等。不创建文件则使用内置默认值。
 

@@ -4,6 +4,27 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.5.0] - 2026-06-29
+
+### Added
+
+- **Guard script system** — `scripts/guard/guard.mjs` provides dimension-based phase transition validation with 5 check dimensions. Exit code ≠ 0 blocks transitions. Reuses existing Validator engine for schema validation.
+  - `artifacts-exist` — checks all 4 planning artifacts + specs/ are present and non-empty
+  - `schema-valid` — validates proposal.md and all specs/*/spec.md using the Validator engine
+  - `contract-fresh` — compares stored artifacts hash against current artifacts for staleness detection
+  - `tasks-complete` — verifies all tasks.md items are checked off
+  - `tests-passing` — confirms test_result: pass is recorded in state file
+- **Lightweight state file** — `.spec-superflow.yaml` as a derived cache (12 fields) for fast context recovery. Always rebuildable from artifacts via `ssf state rebuild`. Artifacts are the source of truth; state file is a performance optimization.
+- **SHA256 hash acceleration** — `scripts/lib/hash.mjs` computes artifact hashes for O(1) staleness detection. Reduces staleness detection from ~3500 tokens (full content read) to ~50 tokens (single script call).
+- **ssf state CLI** — New `state` subcommand with 5 operations: `init`, `check`, `transition`, `get`, `rebuild`.
+
+### Changed
+
+- **workflow-orchestrator** — Each routing rule now includes a guard script invocation step before allowing transitions.
+- **bridge-contract** — Automatically runs `ssf state init` after contract generation.
+- **closure-archivist** — Runs `ssf state transition` after verification completes.
+- **execution-governor** — Updates `batches_completed` in state file after each batch.
+
 ## [0.4.0] - 2026-06-29
 
 ### Added

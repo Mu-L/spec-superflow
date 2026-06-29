@@ -189,6 +189,12 @@ Track progress in `.superpowers/sdd/progress.md`. At skill start, check for an e
 
 The ledger survives context compaction. If `git clean -fdx` destroys it, recover from `git log`.
 
+After each batch completes and the progress ledger is updated, sync the state file:
+
+1. Run: `node scripts/spec-superflow.mjs state get <change-dir> batches_completed`
+2. Increment and update: `node scripts/spec-superflow.mjs state transition <change-dir> executing`
+   (This updates `batches_completed` and `last_transition` timestamp)
+
 ### Dispatch Instructions for Implementer Subagents
 
 Refer to `implementer-prompt.md` for the complete dispatch template. Key principles:
