@@ -16,17 +16,39 @@ const TRANSITION_CHECKS = {
   'executing:closing':    ['tasks-complete', 'tests-passing'],
   'executing:debugging':  [],
   'debugging:executing':  ['contract-fresh'],
+  'exploring:bridging':   ['artifacts-exist'],
+  'exploring:approved':   ['artifacts-exist'],
 };
 
+function applyWorkflowMode(checks, workflow) {
+  if (workflow === 'full') return checks;
+
+  const SKIP_DIMENSIONS = {
+    hotfix: ['schema-valid'],
+    tweak: ['schema-valid', 'contract-fresh'],
+  };
+
+  const skip = SKIP_DIMENSIONS[workflow] || [];
+  return checks.map(check => {
+    if (skip.includes(check.dimension)) {
+      return { ...check, pass: true, skipped: true, failures: [] };
+    }
+    return check;
+  });
+}
+
 async function main() {
-  const { positionals } = parseArgs({
-    options: { json: { type: 'boolean', default: false } },
+  const { positionals, values } = parseArgs({
+    options: {
+      json: { type: 'boolean', default: false },
+      workflow: { type: 'string', default: 'full' },
+    },
     allowPositionals: true,
   });
 
   const subcommand = positionals[0];
   if (subcommand !== 'check') {
-    console.error('Usage: guard.mjs check <change-dir> <from-state> <to-state> [--json]');
+    console.error('Usage: guard.mjs check <change-dir> <from-state> <to-state> [--json] [--workflow <mode>]');
     process.exit(2);
   }
 
@@ -34,6 +56,13 @@ async function main() {
   const fromState = positionals[2];
   const toState = positionals[3];
   const useJson = process.argv.includes('--json');
+  const workflow = values.workflow;
+
+  const VALID_WORKFLOWS = ['full', 'hotfix', 'tweak'];
+  if (!VALID_WORKFLOWS.includes(workflow)) {
+    console.error(`Invalid workflow: ${workflow}. Must be one of: ${VALID_WORKFLOWS.join(', ')}`);
+    process.exit(2);
+  }
 
   if (!changeDir || !fromState || !toState) {
     console.error('Usage: guard.mjs check <change-dir> <from-state> <to-state> [--json]');
@@ -86,14 +115,17 @@ async function main() {
     if (!result.pass) pass = false;
   }
 
+  const finalChecks = applyWorkflowMode(checks, workflow);
+  pass = finalChecks.every(c => c.pass);
+
   if (useJson) {
-    console.log(JSON.stringify({ pass, checks }, null, 2));
+    console.log(JSON.stringify({ pass, checks: finalChecks }, null, 2));
   } else {
     if (pass) {
       console.log('All checks passed.');
     } else {
       console.error('Guard checks failed:');
-      for (const c of checks) {
+      for (const c of finalChecks) {
         if (!c.pass) {
           for (const f of c.failures) {
             console.error(`  [FAIL] ${c.dimension}: ${f}`);

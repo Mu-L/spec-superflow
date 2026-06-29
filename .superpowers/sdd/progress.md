@@ -18,4 +18,9 @@
 - Batch 3: complete — Task 4 (CLI entry + list + validate + config, commit 581990a). All commands verified.
 - Batch 4: complete — Task 5 (CLI version + doctor + sync, commit 473a872). All commands verified.
 - Batch 5: complete — Task 6 (SKILL.md updates: worktree, conflict, config, commit 1e0271e). 4 skills updated.
-- Batch 6: in progress — Task 7 (version bump + CHANGELOG + README + release prep)
+- Batch 6: complete — v0.4.0 released (npm + GitHub Release)
+- **v0.4.0 RELEASED**
+
+## v0.6.0-fast-and-aware
+
+- Batch 1: complete — Task 1.1 (docs/decision-points.md), Task 1.2 (state-loader 14 DP fields), Task 1.3 (cmd-state set subcommand), guard schema-valid fix. Commit a053900.

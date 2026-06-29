@@ -12,6 +12,7 @@ const COMMANDS = {
   sync:     () => import('./lib/cmd-sync.mjs'),
   config:   () => import('./lib/cmd-config.mjs'),
   state:    () => import('./lib/cmd-state.mjs'),
+  inject:   () => import('./lib/cmd-inject.mjs'),
 };
 
 const HELP = `spec-superflow (ssf) — Spec-first workflow CLI
@@ -26,6 +27,7 @@ Commands:
   sync <change-dir>     Merge delta specs into main specs
   config [options]      Display or modify configuration
   state <sub> <dir>     Manage .spec-superflow.yaml state (init|check|transition|get|rebuild)
+  inject <dir>          Generate phase-guard.md and install to .claude/always/
 
 Options:
   --help, -h            Show this help message
