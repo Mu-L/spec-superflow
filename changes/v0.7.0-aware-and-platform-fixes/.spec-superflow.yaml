@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Core state ===
-state: executing
+state: closing
 workflow: full
 
 # === Hashes (fast staleness detection) ===
@@ -16,9 +16,9 @@ test_result: null
 
 # === Metadata ===
 change_name: v0.7.0-aware-and-platform-fixes
-last_transition: 2026-06-30T14:09:52.143Z
-last_transition_from: approved
-last_transition_to: executing
+last_transition: 2026-06-30T14:45:42.145Z
+last_transition_from: executing
+last_transition_to: closing
 
 # === Decision points ===
 dp_1_result: null
@@ -31,7 +31,7 @@ dp_4_result: SDD
 dp_4_timestamp: 2026-06-30T13:55:08Z
 dp_5_result: null
 dp_5_timestamp: null
-dp_6_result: null
-dp_6_timestamp: null
-dp_7_result: null
-dp_7_timestamp: null
+dp_6_result: pass
+dp_6_timestamp: 2026-06-30T14:45:41Z
+dp_7_result: approved
+dp_7_timestamp: 2026-06-30T14:45:41Z

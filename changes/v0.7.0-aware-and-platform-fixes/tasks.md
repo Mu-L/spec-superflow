@@ -59,4 +59,4 @@ changes/v0.7.0-aware-and-platform-fixes/
 - [x] Task 5.3: Update `CHANGELOG.md` with v0.7.0 entries.
 - [x] Task 5.4: Update `README.md` with new CLI commands and platform install notes.
 - [x] Task 5.5: Run `ssf doctor` and `ssf validate`.
-- [ ] Task 5.6: Build, test, commit, tag `v0.7.0`, push to GitHub, refresh marketplace.
+- [x] Task 5.6: Build, test, commit, tag `v0.7.0`, push to GitHub, refresh marketplace.
