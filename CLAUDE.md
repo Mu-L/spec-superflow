@@ -4,135 +4,165 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Claude Code plugin that integrates OpenSpec (planning engine) + Superpowers (execution discipline) into a unified AI coding workflow. Self-contained, zero external npm dependencies. 7-platform support (Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae).
+`spec-superflow` is a self-contained Claude Code plugin that fuses OpenSpec-style planning with Superpowers-style execution discipline. It is distributed as a set of skills in `skills/` plus a small TypeScript validation/parser engine in `src/`. The plugin supports multiple clients, but this repository is primarily developed and tested as a Claude Code plugin.
+
+Current version: `0.6.0`.
 
 ## Commands
 
+Requires **Node >= 22**.
+
 ```bash
-# Build TypeScript
+# Install dependencies
+npm ci
+
+# Compile TypeScript (src/ -> dist/)
 npm run build
 
-# Run integration tests
+# Run all tests (tests import from dist/, so build first)
 npm test
 
-# Run single test (Node 22+ native test runner)
-node --test --experimental-strip-types tests/e2e.test.ts --test-name-pattern="parseDeltaSpec"
+# Run a single test by name pattern
+node --test --experimental-strip-types --test-name-pattern="parseDeltaSpec" tests/e2e.test.ts
 
-# Validate artifacts (uses docs/examples/ data)
-npm run validate
+# Validate planning artifacts in a change directory
+npm run validate -- docs/examples/add-dark-mode
+# or directly via the CLI
+node scripts/spec-superflow.mjs validate docs/examples/add-dark-mode
+
+# Run health checks
+node scripts/spec-superflow.mjs doctor
+
+# List available CLI commands
+node scripts/spec-superflow.mjs --help
 ```
+
+There is no lint script — the project keeps zero runtime dependencies and relies on `tsc --strict` for type checking.
 
 ## Architecture
 
-### Source Code (`src/`)
+The repository has two layers: an embedded TypeScript engine and a skill-based workflow layer.
 
-TypeScript interfaces + regex-based parsers. Compiles to `dist/` (ES2022 + NodeNext + strict).
+### Engine (`src/`)
 
-- `schema/` — Type definitions: `base.ts` (Requirement, Scenario), `change.ts` (Delta operations: ADDED/MODIFIED/REMOVED/RENAMED), `spec.ts`
-- `parsing/` — `requirement-blocks.ts` parses delta spec markdown into `DeltaPlan` (added/modified/removed/renamed blocks). `change-parser.ts` extracts `## Why` + `## What Changes` + delta sections from proposal markdown.
-- `validation/` — `validator.ts` validates artifacts against schema rules. `constants.ts` holds thresholds (min Why length: 50, max deltas per change: 10, etc.). All public API re-exported from `src/index.ts`.
+Compiles to `dist/` with `tsc` (ES2022, NodeNext, strict). Tests import from `dist/index.js`, so always build before testing.
 
-### Validation Rules (enforced by `src/validation/validator.ts`)
+- `schema/` — Type definitions: `Requirement`, `Scenario`, `Delta`, `Change`, `Spec`.
+- `parsing/` — Regex-based parsers: `parseDeltaSpec` extracts ADDED/MODIFIED/REMOVED/RENAMED blocks; `parseChangeMarkdown` extracts `## Why`, `## What Changes`, and inline delta sections from proposals.
+- `validation/` — `Validator` enforces artifact rules, runs three-dimensional implementation verification (Completeness / Correctness / Coherence), detects sync conflicts, and tokenizes English and Chinese text. `constants.ts` holds thresholds such as minimum Why length and max deltas per change.
+- `index.ts` — Public API surface.
 
-- **spec.md**: Each Requirement must contain `SHALL` or `MUST`, at least 1 `#### Scenario:` block
-- **Delta spec**: ADDED/MODIFIED must have requirement text + scenarios; cross-section conflicts blocked (e.g., same requirement in both MODIFIED and REMOVED)
-- **proposal.md**: `## Why` ≥ 50 characters, `## What Changes` cannot be empty
-- `Validator` returns `ValidationReport` with `{valid, issues: [{level: ERROR|WARNING|INFO, path, message}], summary}`. Strict mode treats warnings as errors.
+### Workflow (`skills/`)
 
-### Skills (`skills/`)
-
-9 skills, one per directory. Each contains a `SKILL.md` that Claude Code loads as an instruction set:
+Nine skills that operate as a state machine. Each skill is a directory containing `SKILL.md` (loaded by Claude Code as instructions) and, where needed, sub-prompts for subagents.
 
 | Skill | Phase | Purpose |
 |-------|-------|---------|
-| `workflow-orchestrator` | Entry | Content-level state detection (compares proposal scope vs contract intent lock), routes to correct skill, blocks illegal transitions |
-| `spec-explorer` | Exploring | One-question-at-a-time elicitation, 2-3 approach comparison with recommendation |
-| `spec-forger` | Specifying | Generate planning artifacts, runs schema validation on each |
-| `bridge-contract` | Bridging | Parsing engine auto-extracts 4 planning artifacts → compresses into `execution-contract.md` |
-| `execution-governor` | Executing | TDD Iron Law + SDD subagent-driven development + Review Gates |
-| `systematic-debugger` | Debugging | 4-phase root cause analysis. 3+ fix failures → question architecture → escalate |
-| `code-reviewer` | Review | Structured review with 3 severity levels (Critical/Important/Minor), invoked after each execution batch |
-| `closure-archivist` | Closing | Verification-before-completion Iron Law, archiving, risk summary |
-| `spec-syncer` | Sync | Delta Spec (ADDED/MODIFIED/REMOVED/RENAMED) → intelligent merge into main specs, conflict detection |
-
-### Skill Sub-Prompts
-
-- `skills/execution-governor/implementer-prompt.md` — Subagent implementation template with TDD evidence + self-review requirements
-- `skills/execution-governor/task-reviewer-prompt.md` — Dual-verdict review (spec compliance + code quality)
-- `skills/code-reviewer/code-reviewer-prompt.md` — Structured code review template with 3 severity levels
+| `workflow-orchestrator` | Entry | Content-level state detection; routes to the correct skill and blocks illegal transitions |
+| `spec-explorer` | Exploring | One-question-at-a-time elicitation with 2–3 approach comparisons |
+| `spec-forger` | Specifying | Generates planning artifacts and validates them against schema rules |
+| `bridge-contract` | Bridging | Parses planning artifacts and compresses them into `execution-contract.md` |
+| `execution-governor` | Executing | TDD + SDD subagent execution + Review Gates |
+| `systematic-debugger` | Debugging | 4-phase root-cause analysis; escalates after repeated failures |
+| `code-reviewer` | Review | Structured review with Critical / Important / Minor severity |
+| `closure-archivist` | Closing | Verification-before-completion, archiving, risk summary |
+| `spec-syncer` | Syncing | Merges delta specs into main specs with conflict detection |
 
 ### State Machine
 
-7 states: `exploring → specifying → bridging → approved → executing → closing`, with a `debugging` side-path from `executing`.
+Seven primary states plus a debugging side-path from `executing`:
 
+```text
+exploring → specifying → bridging → approved → executing → closing
+                ↑           ↑            |          ↑     |
+                |           |            v          |     |
+                |           |        debugging ─────┘     |
+                |           |                             |
+                └───────────┴─────────────────────────────┘
+                  scope change → re-specify    contract drift → re-bridge
 ```
-exploring → specifying → bridging → approved-for-build → executing → closing
-                ↑              ↑             |                 ↑    |
-                |              |             v                 |    |
-                |              |         debugging ────────────┘    |
-                |              |                                    |
-                +--------------+------------------------------------+
-                (scope change → re-specify)    (contract drift → re-bridge)
-```
 
-`workflow-orchestrator` is the single entry point. It reads artifact content (not just file existence) to determine current state.
+`workflow-orchestrator` is the single entry point. It determines state by reading artifact content, not just file existence.
 
-### Hard Constraints
+### Validation Rules
 
-- No `execution-contract.md` or no user approval → implementation is **blocked**
-- Requirements change mid-execution → forced rewind to `specifying` or `bridging`
-- Bug encountered → must enter `debugging` state; no "just try random fixes"
-- Contract scope drift detected (proposal intent lock ≠ contract intent) → re-bridge
+`src/validation/validator.ts` enforces:
+
+- **spec.md**: every requirement must contain `SHALL` or `MUST` and at least one `#### Scenario:` block.
+- **Delta spec**: ADDED/MODIFIED sections must have requirement text and scenarios; cross-section conflicts (e.g., the same requirement in both MODIFIED and REMOVED) are blocked.
+- **proposal.md**: `## Why` must be ≥ 50 characters; `## What Changes` cannot be empty.
+- **Implementation verification**: compares a diff against specs and design decisions across Completeness, Correctness, and Coherence.
+
+`Validator` returns a `ValidationReport`: `{ valid, issues: [{ level, path, message }], summary }`. Strict mode treats warnings as errors.
+
+### Fast Paths and Guardrails (v0.6.0)
+
+- **hotfix** mode — ≤2 files, no new modules, no schema changes; skips full exploration and specification.
+- **tweak** mode — ≤4 files, only config/docs changes; skips exploration, specification, and bridging.
+- `scripts/guard/guard.mjs` checks five dimensions before allowing a change to proceed.
+- `rules/phase-guard.md` / `.claude/always/phase-guard.md` provide per-session drift prevention.
+- `docs/decision-points.md` documents the seven standard decision points.
 
 ### Helper Scripts (`scripts/`)
 
-- `validate-artifacts` — CLI entry: reads a change directory, validates proposal.md + all specs/*/spec.md, prints a report. Used by `npm run validate`.
-- `task-brief` — Extracts a single task's markdown from an implementation plan (avoids pasting task text through controller context).
-- `review-package` — Generates a review diff (commit list + stat + diff with extended context) from BASE..HEAD.
+- `spec-superflow.mjs` — CLI entrypoint for `ssf` / `spec-superflow` commands.
+- `lib/` — CLI subcommand modules (`cmd-validate.mjs`, `cmd-doctor.mjs`, `cmd-state.mjs`, etc.), config loader, hash utilities, and state loader.
+- `validate-artifacts` — Reads a change directory, validates `proposal.md` + all `specs/*/spec.md`, and prints a report.
+- `task-brief` — Extracts a single task's markdown from an implementation plan.
+- `review-package` — Generates a review diff from `BASE..HEAD`.
 
-### Hooks (`hooks/`)
+### Hooks
 
-- `hooks/session-start` — Bash script that detects platform (Claude Code/Cursor/Copilot CLI) and injects `workflow-orchestrator/SKILL.md` as session context. Uses different JSON output formats per platform.
-- `hooks/hooks.json` — Claude Code hook config (triggers on Startup|Clear|Compact).
+- `hooks/session-start` — Detects the current client and injects `workflow-orchestrator/SKILL.md` as session context.
+- `hooks/hooks.json` — Claude Code hook config (triggers on Startup / Clear / Compact).
 - `hooks/hooks-cursor.json` — Cursor equivalent.
 
 ### Key Files
 
-- `templates/*.md` — Markdown templates for the 5 artifacts (proposal, spec, design, tasks, execution-contract)
-- `docs/examples/` — Two complete change sets (`add-dark-mode`, `refactor-auth-boundary`) used by tests as real input data
-- `docs/state-machine.md` — Formal state machine documentation
-- `docs/artifact-contract.md` — Artifact roles and mapping from planning to execution
+- `templates/*.md` — Templates for the five artifacts (`proposal`, `spec`, `design`, `tasks`, `execution-contract`).
+- `specs/` — Main capability specifications maintained by `spec-syncer`.
+- `changes/<change-name>/` — In-flight change directories containing planning artifacts, delta specs, and the execution contract.
+- `docs/examples/` — Two complete change sets (`add-dark-mode`, `refactor-auth-boundary`) used as real test data.
+- `docs/state-machine.md` — Formal state-machine documentation.
+- `docs/artifact-contract.md` — Artifact roles and mapping from planning to execution.
+- `docs/decision-points.md` — Standard decision-point protocol.
+- `spec-superflow.config.json` — Optional configuration (absence uses built-in defaults).
+
+## Hard Constraints
+
+- No `execution-contract.md` or no user approval → implementation is **blocked**.
+- Requirements change mid-execution → forced rewind to `specifying` or `bridging`.
+- Bug encountered → must enter `debugging` state; no ad-hoc fixes.
+- Contract scope drift detected (proposal intent lock ≠ contract intent) → re-bridge.
 
 ## Design Decisions
 
-- **`dist/` is committed** — the plugin works via Claude Code's skill system (markdown files), not as a runtime npm dependency. The compiled engine is tracked so validation scripts work after clone without a build step.
+- **`dist/` is committed** — the plugin is consumed via skills and scripts, not as an npm package. Tracking `dist/` lets validation scripts work immediately after cloning.
 - **Tests import from `dist/`, not `src/`** — always run `npm run build` before `npm test`.
-- **Content-level stale detection, not timestamp-based** — `workflow-orchestrator` compares proposal scope vs contract intent lock, not file modification times.
-- **Self-contained** — does not require OpenSpec or Superpowers to be installed. Features absorbed from those systems are reimplemented here, not imported.
+- **Content-level stale detection** — `workflow-orchestrator` compares proposal scope against the contract intent lock, not file timestamps.
+- **Self-contained** — does not require OpenSpec or Superpowers to be installed. Absorbed concepts are reimplemented here.
+- **Zero runtime dependencies** — only `typescript` is a devDependency.
+- **Regex-based parsing** — no Zod or runtime validation libraries.
+- **Multi-platform, single source** — the same skills are packaged for Claude Code, Cursor, Codex, Copilot CLI, Gemini CLI, OpenCode, and Trae via platform-specific manifests.
 
-## Constraints
+## CI/CD
 
-- **Zero external dependencies** — Only TypeScript as devDependency
-- **Node >= 22** — Uses `--experimental-strip-types` for direct .ts test execution
-- **Pure regex parsing** — No Zod or runtime validation libraries
-- **Multi-platform, single source** — Same 9 skills across 7 platforms. Platform-specific wiring is isolated to hooks and plugin manifests (`.claude-plugin/`, `.cursor-plugin/`, `.opencode/`, `gemini-extension.json`).
+`.github/workflows/ci.yml`:
 
-## CI/CD (`.github/workflows/ci.yml`)
-
-- **Push/PR to `main`**: Build + test on Node 22
-- **Tag push `v*`**: Build + test → `gh release create` → `npm publish --provenance --access public`
-- Release requires `NPM_TOKEN` secret and `id-token: write` permission for provenance
+- **Push / PR to `main`**: `npm ci` → `npm run build` → `npm test` on Node 22.
+- **Tag push `v*`**: build + test → `gh release create` → `npm publish --provenance --access public`.
+- Release requires the `NPM_TOKEN` secret and `id-token: write` permission for provenance.
 
 ## Testing
 
-Tests import from `dist/index.js` (compiled output), not source. Run `npm run build` before `npm test`.
-
-Test data lives in `docs/examples/` — real proposal/spec/design artifacts from `add-dark-mode` and `refactor-auth-boundary` scenarios.
+Tests use Node's native test runner with `--experimental-strip-types` so `.ts` test files run directly. They import the compiled engine from `dist/index.js`, so `npm run build` must run before `npm test`. Test data lives in `docs/examples/` — real planning artifacts from `add-dark-mode` and `refactor-auth-boundary`.
 
 ## Release Checklist
 
-Refer to `docs/release-checklist.md` before publishing. Key items:
-- Keep `README.md` / `README.zh-CN.md` / `INSTALL.md` / `CHANGELOG.md` / `.claude-plugin/plugin.json` / `.claude-plugin/marketplace.json` version in sync
-- Verify all examples are complete (proposal + specs + design + tasks + execution-contract + README)
-- No stray `TODO` or `TBD` markers
-- `package.json` version matches `.claude-plugin/plugin.json` version
+Before publishing, see `docs/release-checklist.md`. Key items:
+
+- Keep `README.md`, `INSTALL.md`, `CHANGELOG.md`, and all plugin manifest versions in sync. Use `ssf version <semver>` to sync manifests.
+- Verify all examples are complete (`README.md`, `proposal.md`, `specs/`, `design.md`, `tasks.md`, `execution-contract.md`).
+- Run `node scripts/spec-superflow.mjs doctor` and resolve any failures.
+- Remove stray `TODO` or `TBD` markers.
+- Confirm `package.json` version matches `.claude-plugin/plugin.json`.
