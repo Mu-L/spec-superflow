@@ -18,8 +18,8 @@ Use this checklist before publishing a new version of `spec-superflow`.
 ## Workflow Integrity
 
 - skill descriptions still match their actual responsibilities
-- `workflow-orchestrator` still acts as the primary entry point
-- `bridge-contract` still requires explicit approval before execution
+- `workflow-start` still acts as the primary entry point
+- `contract-builder` still requires explicit approval before execution
 - planning artifacts and execution contract roles remain distinct
 - self-contained ownership is preserved
 
@@ -63,7 +63,7 @@ Do one last read of:
 - `README.md`
 - `README.zh-CN.md`
 - `INSTALL.md`
-- `skills/workflow-orchestrator/SKILL.md`
-- `skills/bridge-contract/SKILL.md`
+- `skills/workflow-start/SKILL.md`
+- `skills/contract-builder/SKILL.md`
 
 If those five files feel coherent together, the release is usually in good shape.

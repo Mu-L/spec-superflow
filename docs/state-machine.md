@@ -9,20 +9,20 @@
 - intent is still fuzzy
 - options are still being compared
 - no implementation is allowed
-- `spec-explorer` is active
+- `need-explorer` is active
 
 ### `specifying`
 
 - planning artifacts are being written or revised
 - proposal, specs, design, and tasks are refined
-- `spec-forger` is active
+- `spec-writer` is active
 - schema validation runs on every artifact generation
 
 ### `bridging`
 
 - planning artifacts are translated into `execution-contract.md`
 - ambiguity is compressed into explicit approved decisions
-- `bridge-contract` is active
+- `contract-builder` is active
 - parsing engine auto-extracts intent/scope/test-obligations/constraints/batches
 
 ### `approved-for-build`
@@ -35,27 +35,27 @@
 
 - implementation follows the execution contract
 - TDD, SDD (subagent-driven), review gates, and escalation rules apply
-- `execution-governor` is active
+- `build-executor` is active
 - `code-reviewer` invoked after each execution batch
 
 ### `debugging`
 
 - execution has hit a bug, test failure, or unexpected behavior
-- `systematic-debugger` is active
+- `bug-investigator` is active
 - 4-phase debugging (Root Cause → Pattern Analysis → Hypothesis → Implementation)
 - After debugging completes, returns to `executing`
 
 ### `closing`
 
 - verification is complete with evidence
-- `closure-archivist` is active
+- `release-archivist` is active
 - `verification-before-completion` gate enforced
-- `spec-syncer` invoked if delta specs need merging into main specs
+- `spec-merger` invoked if delta specs need merging into main specs
 - the change can be summarized, archived, or handed off
 
 ### `abandoned`
 
-- the change has been abandoned by the user or after systematic-debugger escalation
+- the change has been abandoned by the user or after bug-investigator escalation
 - no delta spec merge is allowed
 - no further state transitions are allowed
 - delta specs are preserved for reference only
@@ -97,7 +97,7 @@ The workflow must move back to `specifying` or `bridging` when:
 During `executing`, if a bug, test failure, or unexpected behavior blocks progress:
 
 1. Pause `executing` and enter `debugging`
-2. `systematic-debugger` performs 4-phase root cause analysis
+2. `bug-investigator` performs 4-phase root cause analysis
 3. If root cause found → fix (with TDD) → return to `executing`
 4. If 3+ fix attempts fail → question architecture → escalate to user
 

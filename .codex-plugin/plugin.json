@@ -1,6 +1,6 @@
 {
   "name": "spec-superflow",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "description": "Spec-first workflow that bridges OpenSpec-style planning and Superpowers-style execution discipline.",
   "author": {
     "name": "MageByte",
@@ -34,7 +34,7 @@
     ],
     "websiteURL": "https://github.com/MageByte-Zero/spec-superflow",
     "defaultPrompt": [
-      "Use workflow-orchestrator to start a new change.",
+      "Use workflow-start to start a new change.",
       "Review the current spec-superflow stage.",
       "Bridge the approved plan into an execution contract."
     ],

@@ -8,6 +8,7 @@ const MANIFESTS = [
   { file: '.claude-plugin/plugin.json', path: ['version'] },
   { file: '.claude-plugin/marketplace.json', path: ['plugins', '0', 'version'] },
   { file: '.cursor-plugin/plugin.json', path: ['version'] },
+  { file: '.codex-plugin/plugin.json', path: ['version'] },
   { file: 'gemini-extension.json', path: ['version'] },
 ];
 

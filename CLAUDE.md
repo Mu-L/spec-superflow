@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `spec-superflow` is a self-contained Claude Code plugin that fuses OpenSpec-style planning with Superpowers-style execution discipline. It is distributed as a set of skills in `skills/` plus a small TypeScript validation/parser engine in `src/`. The plugin supports multiple clients, but this repository is primarily developed and tested as a Claude Code plugin.
 
-Current version: `0.7.1`.
+Current version: `0.8.0`.
 
 ## Commands
 
@@ -58,15 +58,15 @@ Nine skills that operate as a state machine. Each skill is a directory containin
 
 | Skill | Phase | Purpose |
 |-------|-------|---------|
-| `workflow-orchestrator` | Entry | Content-level state detection; routes to the correct skill and blocks illegal transitions |
-| `spec-explorer` | Exploring | One-question-at-a-time elicitation with 2–3 approach comparisons |
-| `spec-forger` | Specifying | Generates planning artifacts and validates them against schema rules |
-| `bridge-contract` | Bridging | Parses planning artifacts and compresses them into `execution-contract.md` |
-| `execution-governor` | Executing | TDD + SDD subagent execution + Review Gates |
-| `systematic-debugger` | Debugging | 4-phase root-cause analysis; escalates after repeated failures |
+| `workflow-start` | Entry | Content-level state detection; routes to the correct skill and blocks illegal transitions |
+| `need-explorer` | Exploring | One-question-at-a-time elicitation with 2–3 approach comparisons |
+| `spec-writer` | Specifying | Generates planning artifacts and validates them against schema rules |
+| `contract-builder` | Bridging | Parses planning artifacts and compresses them into `execution-contract.md` |
+| `build-executor` | Executing | TDD + SDD subagent execution + Review Gates |
+| `bug-investigator` | Debugging | 4-phase root-cause analysis; escalates after repeated failures |
 | `code-reviewer` | Review | Structured review with Critical / Important / Minor severity |
-| `closure-archivist` | Closing | Verification-before-completion, archiving, risk summary |
-| `spec-syncer` | Syncing | Merges delta specs into main specs with conflict detection |
+| `release-archivist` | Closing | Verification-before-completion, archiving, risk summary |
+| `spec-merger` | Syncing | Merges delta specs into main specs with conflict detection |
 
 ### State Machine
 
@@ -82,7 +82,7 @@ exploring → specifying → bridging → approved → executing → closing
                   scope change → re-specify    contract drift → re-bridge
 ```
 
-`workflow-orchestrator` is the single entry point. It determines state by reading artifact content, not just file existence.
+`workflow-start` is the single entry point. It determines state by reading artifact content, not just file existence.
 
 ### Validation Rules
 
@@ -113,14 +113,14 @@ exploring → specifying → bridging → approved → executing → closing
 
 ### Hooks
 
-- `hooks/session-start` — Detects the current client and injects `workflow-orchestrator/SKILL.md` as session context.
+- `hooks/session-start` — Detects the current client and injects `workflow-start/SKILL.md` as session context.
 - `hooks/hooks.json` — Claude Code hook config (triggers on Startup / Clear / Compact).
 - `hooks/hooks-cursor.json` — Cursor equivalent.
 
 ### Key Files
 
 - `templates/*.md` — Templates for the five artifacts (`proposal`, `spec`, `design`, `tasks`, `execution-contract`).
-- `specs/` — Main capability specifications maintained by `spec-syncer`.
+- `specs/` — Main capability specifications maintained by `spec-merger`.
 - `changes/<change-name>/` — In-flight change directories containing planning artifacts, delta specs, and the execution contract.
 - `docs/examples/` — Two complete change sets (`add-dark-mode`, `refactor-auth-boundary`) used as real test data.
 - `docs/state-machine.md` — Formal state-machine documentation.
@@ -139,7 +139,7 @@ exploring → specifying → bridging → approved → executing → closing
 
 - **`dist/` is committed** — the plugin is consumed via skills and scripts, not as an npm package. Tracking `dist/` lets validation scripts work immediately after cloning.
 - **Tests import from `dist/`, not `src/`** — always run `npm run build` before `npm test`.
-- **Content-level stale detection** — `workflow-orchestrator` compares proposal scope against the contract intent lock, not file timestamps.
+- **Content-level stale detection** — `workflow-start` compares proposal scope against the contract intent lock, not file timestamps.
 - **Self-contained** — does not require OpenSpec or Superpowers to be installed. Absorbed concepts are reimplemented here.
 - **Zero runtime dependencies** — only `typescript` is a devDependency.
 - **Regex-based parsing** — no Zod or runtime validation libraries.

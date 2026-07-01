@@ -24,9 +24,9 @@ Most AI coding sessions fail in one of two ways:
 
 `spec-superflow` addresses both:
 
-- `spec-explorer` and `spec-forger` make the change explicit.
-- `bridge-contract` turns planning artifacts into an `execution-contract.md`.
-- `execution-governor` treats that contract as the approved source for implementation behavior.
+- `need-explorer` and `spec-writer` make the change explicit.
+- `contract-builder` turns planning artifacts into an `execution-contract.md`.
+- `build-executor` treats that contract as the approved source for implementation behavior.
 
 ## When to Use
 
@@ -36,10 +36,10 @@ Most AI coding sessions fail in one of two ways:
 |----------|-----|
 | **Large feature development** | Needs explicit planning, review gates, and test discipline to prevent drift |
 | **Multi-person collaboration** | `execution-contract.md` provides clear contracts and review standards |
-| **Long-term maintenance** | `spec-syncer` prevents spec rot; delta specs support continuous evolution |
+| **Long-term maintenance** | `spec-merger` prevents spec rot; delta specs support continuous evolution |
 | **TDD + Review Gate required** | Built-in TDD Iron Law + SDD subagent-driven + dual review |
-| **Brownfield projects** | `spec-explorer` inspects existing code before planning changes |
-| **Need for planning stability** | `bridge-contract` ensures planning is stable before implementation begins |
+| **Brownfield projects** | `need-explorer` inspects existing code before planning changes |
+| **Need for planning stability** | `contract-builder` ensures planning is stable before implementation begins |
 
 ### ❌ Not a Good Fit
 
@@ -47,9 +47,9 @@ Most AI coding sessions fail in one of two ways:
 |----------|-----|-------------|
 | **Quick prototype / Demo** | Workflow is heavy, high token cost | Use Claude Code default behavior |
 | **Small changes (< 100 lines)** | 9 skills + 7 states is overkill | Just edit code + test |
-| **Exploratory development** | Planning changes frequently, contract goes stale fast | Use `spec-explorer` alone, skip full workflow |
+| **Exploratory development** | Planning changes frequently, contract goes stale fast | Use `need-explorer` alone, skip full workflow |
 | **Personal experimental project** | Review gates and archiving add burden | Use Superpowers or OpenSpec alone |
-| **Pure bug fix** | No planning phase needed | Use `systematic-debugger` alone |
+| **Pure bug fix** | No planning phase needed | Use `bug-investigator` alone |
 | **Learning / experimenting with new tools** | Workflow restricts exploration freedom | Just experiment directly |
 
 ### 💡 Rule of Thumb
@@ -62,15 +62,15 @@ Most AI coding sessions fail in one of two ways:
 
 ### The Single Entry Point
 
-**Everything starts from `workflow-orchestrator`.**
+**Everything starts from `workflow-start`.**
 
 Whenever you begin or resume a change, just tell your agent:
 
 ```
-use workflow-orchestrator to start
+use workflow-start to start
 ```
 
-`workflow-orchestrator` inspects the current artifact directory, determines which stage you're in, and routes to the correct next skill. You don't need to memorize six skill names or manually figure out "what should I do next" — the entry point handles it.
+`workflow-start` inspects the current artifact directory, determines which stage you're in, and routes to the correct next skill. You don't need to memorize six skill names or manually figure out "what should I do next" — the entry point handles it.
 
 ### Full Flow: Six States, One Pipeline
 
@@ -79,17 +79,17 @@ You: "add authorization to the API"
        │
        ▼
 ┌──────────────────────────┐
-│  workflow-orchestrator    │  ← Single entry. Inspects state, routes forward
+│  workflow-start    │  ← Single entry. Inspects state, routes forward
 └──────┬───────────────────┘
        │
        ▼
-   exploring         spec-explorer asks: "RBAC or ABAC?" "What granularity?" "Which endpoints?"
+   exploring         need-explorer asks: "RBAC or ABAC?" "What granularity?" "Which endpoints?"
        │
        ▼
-   specifying        spec-forger produces 4 artifacts: proposal + specs + design + tasks
+   specifying        spec-writer produces 4 artifacts: proposal + specs + design + tasks
        │
        ▼
-   bridging          bridge-contract compresses 4 artifacts into 1 execution-contract.md
+   bridging          contract-builder compresses 4 artifacts into 1 execution-contract.md
        │                 ┌────────────────────────────────────────┐
        │                 │ execution-contract.md                  │
        │                 │  - Input / Output / Boundaries         │
@@ -100,10 +100,10 @@ You: "add authorization to the API"
   ◇ User Approval ◇   ← The only human gate: you review, confirm, say "approved"
        │
        ▼
-   executing         execution-governor enforces TDD, review gates, contract compliance
+   executing         build-executor enforces TDD, review gates, contract compliance
        │
        ▼
-   closing           closure-archivist verifies, summarizes, archives
+   closing           release-archivist verifies, summarizes, archives
 ```
 
 **Hard constraints:**
@@ -155,12 +155,12 @@ In concrete terms:
 
 | Skill | Stage | Responsibility |
 |---|---|---|
-| `workflow-orchestrator` | Entry | Inspect state, route to correct skill, block invalid transitions |
-| `spec-explorer` | Exploring | Clarify intent, scope, constraints, and success criteria |
-| `spec-forger` | Specifying | Generate proposal, specs, design, and tasks |
-| `bridge-contract` | Bridging | Convert planning artifacts into `execution-contract.md` |
-| `execution-governor` | Executing | Enforce TDD, review gates, and contract-first implementation |
-| `closure-archivist` | Closing | Verify, summarize, and prepare for archive |
+| `workflow-start` | Entry | Inspect state, route to correct skill, block invalid transitions |
+| `need-explorer` | Exploring | Clarify intent, scope, constraints, and success criteria |
+| `spec-writer` | Specifying | Generate proposal, specs, design, and tasks |
+| `contract-builder` | Bridging | Convert planning artifacts into `execution-contract.md` |
+| `build-executor` | Executing | Enforce TDD, review gates, and contract-first implementation |
+| `release-archivist` | Closing | Verify, summarize, and prepare for archive |
 
 ## Install
 
@@ -229,7 +229,7 @@ All install methods: [INSTALL.md](INSTALL.md)
 
 1. Install the plugin (see above).
 2. Create or choose a change workspace under `workflow/changes/<change-name>/`.
-3. Start from `workflow-orchestrator`.
+3. Start from `workflow-start`.
 4. Let the workflow move through exploration, specification, bridging, execution, and closure.
 
 ## Version Notes
@@ -242,7 +242,7 @@ All install methods: [INSTALL.md](INSTALL.md)
 
 ### 1. Start from the orchestrator
 
-Ask the agent to use `workflow-orchestrator` when:
+Ask the agent to use `workflow-start` when:
 
 - starting a new change
 - resuming an old change
@@ -317,13 +317,13 @@ You do not need to install OpenSpec or Superpowers at runtime.
 <details>
 <summary><strong>Can I use this with existing OpenSpec change folders?</strong></summary>
 
-Partially. If your folder already has proposal, specs, design, and tasks, you can run bridge-contract to generate the execution contract. The folder structure is compatible. However, mixing OpenSpec CLI commands with spec-superflow skills in the same session is not recommended -- pick one workflow owner.
+Partially. If your folder already has proposal, specs, design, and tasks, you can run contract-builder to generate the execution contract. The folder structure is compatible. However, mixing OpenSpec CLI commands with spec-superflow skills in the same session is not recommended -- pick one workflow owner.
 </details>
 
 <details>
 <summary><strong>Does this work with brownfield / existing codebases?</strong></summary>
 
-Yes. The workflow does not assume a greenfield project. The spec-explorer inspects the current project context before asking clarifying questions. See the `refactor-auth-boundary` example for a brownfield scenario.
+Yes. The workflow does not assume a greenfield project. The need-explorer inspects the current project context before asking clarifying questions. See the `refactor-auth-boundary` example for a brownfield scenario.
 </details>
 
 ## Current Status

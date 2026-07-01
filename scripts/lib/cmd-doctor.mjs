@@ -15,6 +15,7 @@ function checkVersionConsistency(root) {
     { name: '.claude-plugin/plugin.json', path: ['version'] },
     { name: '.claude-plugin/marketplace.json', path: ['plugins', '0', 'version'] },
     { name: '.cursor-plugin/plugin.json', path: ['version'] },
+    { name: '.codex-plugin/plugin.json', path: ['version'] },
     { name: 'gemini-extension.json', path: ['version'] },
   ];
 

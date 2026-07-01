@@ -7,7 +7,7 @@ Source lineage:
 - [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec)
 - [obra/superpowers](https://github.com/obra/superpowers)
 
-Current release: `v0.6.0`. This repo tracks `spec-superflow` versions, not runtime dependency versions for the upstream projects.
+Current release: `v0.8.0`. This repo tracks `spec-superflow` versions, not runtime dependency versions for the upstream projects.
 
 ## Claude Code
 
@@ -48,6 +48,8 @@ node /absolute/path/to/spec-superflow/scripts/install-cursor.mjs
 - 把 `spec-superflow/skills/` 复制到 `.cursor/skills/`
 - 生成 `.cursor/rules/phase-guard.mdc`（alwaysApply）
 
+`.cursor/` 是本地生成目录，已加入 `.gitignore`，不需要提交到仓库。
+
 ### 手动部署
 
 ```bash
@@ -63,7 +65,7 @@ mkdir -p .cursor/rules
 在 Cursor Agent 中输入：
 
 ```
-/workflow-orchestrator
+/workflow-start
 ```
 
 如果能看到技能被调用，说明安装成功。
@@ -161,12 +163,12 @@ Then configure your client to load skills from:
 安装完成后，告诉 Agent：
 
 ```
-用 workflow-orchestrator 开始
+用 workflow-start 开始
 ```
 
-`workflow-orchestrator` 会检查当前工件目录，判断你处于探索 / 规格 / 桥接 / 执行 / 收口的哪个阶段，然后自动路由到正确的下一个 skill。
+`workflow-start` 会检查当前工件目录，判断你处于探索 / 规格 / 桥接 / 执行 / 收口的哪个阶段，然后自动路由到正确的下一个 skill。
 
-- 启动新的变更 → "用 workflow-orchestrator 开始"
+- 启动新的变更 → "用 workflow-start 开始"
 - 恢复旧的变更 → "继续上次的工作流"
 - 不确定当前状态 → "帮我看看现在该干什么"
 
@@ -193,8 +195,8 @@ workflow/
 
 安装后验证：
 
-- `workflow-orchestrator` skill 已可用
-- 其余 5 个 skill 全部可见
+- `workflow-start` skill 已可用
+- 其余 8 个 skill 全部可见
 
 ## 故障排查
 
@@ -205,6 +207,6 @@ workflow/
 
 ### 工作流过早开始实现
 
-从 `workflow-orchestrator` 入口开始，不要直接调用 `execution-governor`。
+从 `workflow-start` 入口开始，不要直接调用 `build-executor`。
 
 推荐流程：`exploring -> specifying -> bridging -> approved-for-build -> executing -> closing`
