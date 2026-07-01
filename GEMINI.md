@@ -10,18 +10,17 @@ The workflow is self-contained and does not require OpenSpec or Superpowers at r
 <!-- spec-superflow-phase-guard-start -->
 # Phase Guard
 
-**当前阶段**: executing | **工作流**: full
+**当前阶段**: exploring | **工作流**: auto
 
 ## ✅ 允许操作
-- 按 execution-contract.md 执行任务
-- 运行测试
-- 提交代码（按 batch 提交）
+- 澄清需求、比较方案
+- 与用户讨论 scope 和 capabilities
 
 ## ⛔ 禁止操作
-- 修改 proposal.md, specs/, design.md（需先回退到 specifying）
-- 修改 execution-contract.md（需先回退到 bridging）
-- 跳过测试步骤
+- 创建规划工件（proposal.md, specs/, design.md, tasks.md）
+- 执行实现代码
+- 修改 execution-contract.md
 
 ## 🔔 决策点
-- DP-5: 调试升级 — 3+ 修复失败后需用户决定
+- DP-1: 需求确认 — 进入 specifying 前需用户确认 scope
 <!-- spec-superflow-phase-guard-end -->
