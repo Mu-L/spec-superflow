@@ -92,6 +92,10 @@ function runGuard(from, to, dir, workflow = 'full') {
   }
 }
 
+function guardOutput(result) {
+  return `${result.stdout || ''}\n${result.stderr || ''}`;
+}
+
 // ─── D1: Guard 检查矩阵完整性 ───
 // Requirement: Guard 检查矩阵完整性
 // Scenario: 主线 transition 全覆盖
@@ -107,9 +111,10 @@ describe('Guard transition matrix completeness', () => {
       const result = runGuard(t.from, t.to, dir, t.workflow || 'full');
       // The transition should be handled (either pass or fail with specific reason, but not "unknown transition")
       if (!result.ok) {
+        const output = guardOutput(result);
         assert.ok(
-          !result.stderr.includes('unknown transition') && !result.stderr.includes('Unknown transition'),
-          `Transition ${label} is not defined in guard matrix: ${result.stderr}`
+          !output.includes('unknown transition') && !output.includes('Unknown transition'),
+          `Transition ${label} is not defined in guard matrix: ${output}`
         );
       }
     });
@@ -165,14 +170,16 @@ describe('Debugging round-trip', () => {
     const result = runGuard('executing', 'debugging', dir);
     // The transition may fail due to missing execution artifacts, but should NOT be "unknown transition"
     if (!result.ok) {
-      assert.ok(!result.stderr?.includes('unknown'), `Should not reject with unknown: ${result.stderr}`);
+      const output = guardOutput(result);
+      assert.ok(!output.includes('unknown'), `Should not reject with unknown: ${output}`);
     }
   });
 
   it('SHALL allow debugging → executing transition', () => {
     const result = runGuard('debugging', 'executing', dir);
     if (!result.ok) {
-      assert.ok(!result.stderr?.includes('unknown'), `Should not reject with unknown: ${result.stderr}`);
+      const output = guardOutput(result);
+      assert.ok(!output.includes('unknown'), `Should not reject with unknown: ${output}`);
     }
   });
 });
@@ -219,27 +226,29 @@ describe('Fast-path validation', () => {
     const result = runGuard('exploring', 'bridging', dir, 'hotfix');
     // May fail on schema-valid or other checks, but should NOT be "unknown transition"
     if (!result.ok) {
-      assert.ok(!result.stderr?.includes('unknown'), `Hotfix fast-path should be defined: ${result.stderr}`);
+      const output = guardOutput(result);
+      assert.ok(!output.includes('unknown'), `Hotfix fast-path should be defined: ${output}`);
     }
   });
 
   it('SHALL support tweak fast-path (exploring → approved-for-build)', () => {
     const result = runGuard('exploring', 'approved-for-build', dir, 'tweak');
     if (!result.ok) {
-      assert.ok(!result.stderr?.includes('unknown'), `Tweak fast-path should be defined: ${result.stderr}`);
+      const output = guardOutput(result);
+      assert.ok(!output.includes('unknown'), `Tweak fast-path should be defined: ${output}`);
     }
   });
 
   it('SHALL reject hotfix fast-path when workflow is full', () => {
     const result = runGuard('exploring', 'bridging', dir, 'full');
-    const output = `${result.stdout}\n${result.stderr}`;
+    const output = guardOutput(result);
     assert.equal(result.ok, false, 'exploring -> bridging must be rejected in full workflow');
     assert.match(output, /workflow-mode|fast-path|hotfix|tweak/i);
   });
 
   it('SHALL reject tweak fast-path when workflow is full', () => {
     const result = runGuard('exploring', 'approved-for-build', dir, 'full');
-    const output = `${result.stdout}\n${result.stderr}`;
+    const output = guardOutput(result);
     assert.equal(result.ok, false, 'exploring -> approved-for-build must be rejected in full workflow');
     assert.match(output, /workflow-mode|fast-path|tweak/i);
   });
