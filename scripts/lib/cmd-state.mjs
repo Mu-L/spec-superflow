@@ -125,7 +125,7 @@ export async function run(args) {
         process.exit(1);
       }
 
-      if (guardResult.status !== 0 || !parsed.pass) {
+      if (guardResult.status !== 0 || parsed.pass !== true) {
         const failures = (parsed.checks || [])
           .filter(c => !c.pass)
           .flatMap(c => (c.failures || []).map(f => `[${c.dimension}] ${f}`));

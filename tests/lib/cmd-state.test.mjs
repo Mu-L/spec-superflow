@@ -2,7 +2,7 @@
 // Tests for scripts/lib/cmd-state.mjs
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
@@ -10,16 +10,20 @@ import { execSync } from 'node:child_process';
 const CLI_PATH = join(process.cwd(), 'scripts/spec-superflow.mjs');
 let tempDir;
 
-function ssf(args) {
+function ssf(args, options = {}) {
   try {
     const result = execSync(
       `node ${CLI_PATH} ${args}`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], ...options }
     );
     return { exitCode: 0, stdout: result.trim(), stderr: '' };
   } catch (err) {
     return { exitCode: err.status || 1, stdout: err.stdout?.trim() || '', stderr: err.stderr?.trim() || err.message };
   }
+}
+
+function shellQuote(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 describe('cmd-state: init', () => {
@@ -178,6 +182,39 @@ describe('cmd-state: transition', () => {
 
     const check = ssf(`state get ${tempDir} state`);
     assert.equal(check.stdout.trim(), 'exploring');
+  });
+
+  it('rejects transition when guard pass is a truthy non-boolean value', () => {
+    rmSync(join(tempDir, '.spec-superflow.yaml'), { force: true });
+    ssf(`state init ${tempDir}`);
+
+    const shimDir = mkdtempSync(join(tmpdir(), 'ssf-node-shim-'));
+    const nodeShim = join(shimDir, 'node');
+    writeFileSync(nodeShim, [
+      '#!/bin/sh',
+      'case "$1" in',
+      '  */scripts/guard/guard.mjs)',
+      '    printf \'%s\\n\' \'{"pass":"false","checks":[]}\'',
+      '    exit 0',
+      '    ;;',
+      'esac',
+      `exec ${shellQuote(process.execPath)} "$@"`,
+      '',
+    ].join('\n'));
+    chmodSync(nodeShim, 0o755);
+
+    try {
+      const result = ssf(`state transition ${tempDir} specifying`, {
+        env: { ...process.env, PATH: `${shimDir}:${process.env.PATH}` },
+      });
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr || result.stdout, /guard-error|Guard check failed/i);
+
+      const check = ssf(`state get ${tempDir} state`);
+      assert.equal(check.stdout.trim(), 'exploring');
+    } finally {
+      rmSync(shimDir, { recursive: true, force: true });
+    }
   });
 });
 
