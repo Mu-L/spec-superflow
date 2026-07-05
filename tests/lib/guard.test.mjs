@@ -85,11 +85,19 @@ describe('guard: transition matrix', () => {
     assert.deepStrictEqual(result.output.checks, []);
   });
 
-  it('exploring→approved-for-build requires artifacts-exist', () => {
+  it('exploring→approved-for-build fails in default full workflow', () => {
     const result = runGuard('exploring', 'approved-for-build');
-    assert.equal(result.exitCode, 0, `Expected exit 0 but got ${result.exitCode}: ${JSON.stringify(result.output)}`);
+    assert.equal(result.exitCode, 1, `Expected exit 1 but got ${result.exitCode}: ${JSON.stringify(result.output)}`);
     const dims = result.output.checks.map(c => c.dimension);
-    assert.ok(dims.includes('artifacts-exist'));
+    assert.ok(dims.includes('workflow-mode'));
+  });
+
+  it('exploring→approved-for-build passes in tweak workflow', () => {
+    const result = runGuard('exploring', 'approved-for-build', '--workflow tweak');
+    assert.equal(result.exitCode, 0, `Expected exit 0 but got ${result.exitCode}: ${JSON.stringify(result.output)}`);
+    const artifactsCheck = result.output.checks.find(c => c.dimension === 'artifacts-exist');
+    assert.ok(artifactsCheck);
+    assert.equal(artifactsCheck.pass, true);
   });
 
   it('unknown transition returns error', () => {
