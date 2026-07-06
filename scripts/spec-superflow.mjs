@@ -16,6 +16,14 @@ const COMMANDS = {
   audit:          () => import('./lib/cmd-audit.mjs'),
   'install-cursor': () => import('./lib/cmd-install-cursor.mjs'),
   'install-workbuddy': () => import('./lib/cmd-install-workbuddy.mjs'),
+  'install-cline':    () => import('./lib/cmd-install-cline.mjs'),
+  'install-kiro':     () => import('./lib/cmd-install-kiro.mjs'),
+  'install-windsurf': () => import('./lib/cmd-install-windsurf.mjs'),
+  'install-qwen':     () => import('./lib/cmd-install-qwen.mjs'),
+  'install-amazon-q': () => import('./lib/cmd-install-amazon-q.mjs'),
+  'install-roocode':  () => import('./lib/cmd-install-roocode.mjs'),
+  'install-continue': () => import('./lib/cmd-install-continue.mjs'),
+  'install-pi':       () => import('./lib/cmd-install-pi.mjs'),
 };
 
 const HELP = `spec-superflow (ssf) — Spec-first workflow CLI
@@ -34,6 +42,14 @@ Commands:
   audit <dir>           Generate decision-point-audit.md from .spec-superflow.yaml
   install-cursor        Deploy skills/scripts/docs to .cursor/ (local Cursor setup)
   install-workbuddy     Deploy skills to WorkBuddy marketplace and enable them
+  install-cline         Deploy to .cline/ + .clinerules/ (Cline)
+  install-kiro          Deploy to .kiro/ + .kiro/steering/ (Kiro)
+  install-windsurf      Deploy to .windsurf/ + .windsurf/rules/ (Windsurf)
+  install-qwen          Deploy to .qwen/ + .qwen/rules/ (Qwen Code)
+  install-amazon-q      Deploy to .amazonq/ + .amazonq/rules/ (Amazon Q Developer)
+  install-roocode       Deploy to .roo/ + .roo/rules/ (Roo Code)
+  install-continue      Deploy to .continue/ + .continue/rules/ (Continue)
+  install-pi            Deploy to .pi/skills/ (Pi agent; no rules dir)
 
 Options:
   --help, -h            Show this help message
@@ -53,6 +69,7 @@ Examples:
   ssf state get changes/my-change/ batches_completed
   ssf install-cursor
   ssf install-workbuddy
+  ssf install-cline --local /path/to/spec-superflow
 `;
 
 async function main() {
