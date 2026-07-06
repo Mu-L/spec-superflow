@@ -7,7 +7,7 @@
 - [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) — 规划引擎（Schema 验证、Delta Spec、工件解析）
 - [obra/superpowers](https://github.com/obra/superpowers) — 执行纪律（TDD 铁律、SDD、系统化调试、代码审查）
 
-当前发布版本：**v0.8.12**。
+当前发布版本：**v0.8.13**。
 
 ---
 
@@ -24,6 +24,14 @@
 | OpenCode | plugin entry / skills 目录 | `git pull` | 删除 plugin/skills |
 | WorkBuddy | `ssf install-workbuddy` | 重新运行安装器 | 删除 marketplace 插件并禁用 |
 | Trae IDE / TRAE Work | `.trae/skills` / 上传 zip 或 .skill / marketplace | `git pull` + 重新导入 | UI 卸载或删除技能目录 |
+| Cline | `ssf install-cline` | 重新运行脚本 | 删除 `.cline/skills/`、`.clinerules/` |
+| Kiro | `ssf install-kiro` | 重新运行脚本 | 删除 `.kiro/skills/`、`.kiro/steering/` |
+| Windsurf | `ssf install-windsurf` | 重新运行脚本 | 删除 `.windsurf/skills/`、`.windsurf/rules/` |
+| Qwen Code | `ssf install-qwen` | 重新运行脚本 | 删除 `.qwen/skills/`、`.qwen/rules/` |
+| Amazon Q Developer | `ssf install-amazon-q` | 重新运行脚本 | 删除 `.amazonq/skills/`、`.amazonq/rules/` |
+| Roo Code | `ssf install-roocode` | 重新运行脚本 | 删除 `.roo/skills/`、`.roo/rules/` |
+| Continue | `ssf install-continue` | 重新运行脚本 | 删除 `.continue/skills/`、`.continue/rules/` |
+| Pi | `ssf install-pi` | 重新运行脚本 | 删除 `.pi/skills/` |
 
 ---
 
@@ -410,6 +418,199 @@ cd /path/to/spec-superflow && git pull
 ### 卸载
 
 删除客户端技能目录中的 spec-superflow 技能即可。
+
+---
+
+## Cline
+
+Cline 原生读取 `.clinerules/*.md` 作为常驻上下文。安装脚本部署 skills 到 `.cline/skills/`、运行时依赖到 `.cline/spec-superflow/`、phase-guard 规则到 `.clinerules/phase-guard.md`（Cline 自动加载，无需手动引用）。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-cline
+```
+
+或从本地仓库（开发 / 离线）：
+
+```bash
+node scripts/install-cline.mjs --local /path/to/spec-superflow
+```
+
+### 升级
+
+```bash
+npx spec-superflow@latest install-cline
+```
+
+### 卸载
+
+```bash
+rm -rf .cline/skills .cline/spec-superflow .clinerules/phase-guard.md
+```
+
+### 验证
+
+```bash
+ls .cline/skills          # 应有 9 个 skill 目录
+cat .clinerules/phase-guard.md
+```
+
+---
+
+## Kiro
+
+AWS Kiro IDE 读取 `.kiro/steering/*.md` 作为 steering 规则。安装脚本部署 skills 到 `.kiro/skills/`、运行时依赖到 `.kiro/spec-superflow/`、phase-guard 规则到 `.kiro/steering/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-kiro
+```
+
+### 升级
+
+```bash
+npx spec-superflow@latest install-kiro
+```
+
+### 卸载
+
+```bash
+rm -rf .kiro/skills .kiro/spec-superflow .kiro/steering/phase-guard.md
+```
+
+### 验证
+
+```bash
+ls .kiro/skills
+cat .kiro/steering/phase-guard.md
+```
+
+---
+
+## Windsurf
+
+Codeium Windsurf 读取 `.windsurf/rules/*.md` 作为规则。安装脚本部署 skills 到 `.windsurf/skills/`、运行时依赖到 `.windsurf/spec-superflow/`、phase-guard 规则到 `.windsurf/rules/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-windsurf
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+# 升级
+npx spec-superflow@latest install-windsurf
+# 卸载
+rm -rf .windsurf/skills .windsurf/spec-superflow .windsurf/rules/phase-guard.md
+# 验证
+ls .windsurf/skills && cat .windsurf/rules/phase-guard.md
+```
+
+---
+
+## Qwen Code
+
+Qwen Code CLI（Gemini CLI fork）读取 `.qwen/rules/*.md` 作为规则。安装脚本部署 skills 到 `.qwen/skills/`、运行时依赖到 `.qwen/spec-superflow/`、phase-guard 规则到 `.qwen/rules/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-qwen
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+npx spec-superflow@latest install-qwen
+rm -rf .qwen/skills .qwen/spec-superflow .qwen/rules/phase-guard.md
+ls .qwen/skills && cat .qwen/rules/phase-guard.md
+```
+
+---
+
+## Amazon Q Developer
+
+Amazon Q Developer CLI 读取 `.amazonq/rules/*.md` 作为规则。安装脚本部署 skills 到 `.amazonq/skills/`、运行时依赖到 `.amazonq/spec-superflow/`、phase-guard 规则到 `.amazonq/rules/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-amazon-q
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+npx spec-superflow@latest install-amazon-q
+rm -rf .amazonq/skills .amazonq/spec-superflow .amazonq/rules/phase-guard.md
+ls .amazonq/skills && cat .amazonq/rules/phase-guard.md
+```
+
+---
+
+## Roo Code
+
+Roo Code（Roo Cline）读取 `.roo/rules/*.md` 作为规则。安装脚本部署 skills 到 `.roo/skills/`、运行时依赖到 `.roo/spec-superflow/`、phase-guard 规则到 `.roo/rules/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-roocode
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+npx spec-superflow@latest install-roocode
+rm -rf .roo/skills .roo/spec-superflow .roo/rules/phase-guard.md
+ls .roo/skills && cat .roo/rules/phase-guard.md
+```
+
+---
+
+## Continue
+
+Continue（VS Code 扩展）读取 `.continue/rules/*.md` 作为规则。安装脚本部署 skills 到 `.continue/skills/`、运行时依赖到 `.continue/spec-superflow/`、phase-guard 规则到 `.continue/rules/phase-guard.md`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-continue
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+npx spec-superflow@latest install-continue
+rm -rf .continue/skills .continue/spec-superflow .continue/rules/phase-guard.md
+ls .continue/skills && cat .continue/rules/phase-guard.md
+```
+
+---
+
+## Pi
+
+Pi agent 从 `.pi/skills/`（全局 `.pi/agent/skills/`）读取技能。Pi 没有规则目录，安装脚本只部署 skills 到 `.pi/skills/`、运行时依赖到 `.pi/spec-superflow/`；启动工作流时需手动调用 `/workflow-start`。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-pi
+```
+
+### 升级 / 卸载 / 验证
+
+```bash
+npx spec-superflow@latest install-pi
+rm -rf .pi/skills .pi/spec-superflow
+ls .pi/skills   # 应有 9 个 skill 目录
+```
+
+> Pi 无 phase-guard 规则自动注入，会话中请显式 `用 workflow-start 开始`。
 
 ---
 

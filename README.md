@@ -93,15 +93,23 @@ gemini extensions install https://github.com/MageByte-Zero/spec-superflow
 gemini extensions update spec-superflow   # 升级
 ```
 
-### OpenCode / WorkBuddy / Trae
+### 更多平台（Cline / Kiro / Windsurf / Qwen / Amazon Q / Roo Code / Continue / Pi / OpenCode / WorkBuddy / Trae）
 
 | 平台 | 安装方式 | 状态 |
 |------|---------|------|
+| **Cline** | `npx spec-superflow@latest install-cline` | 已提供安装器 |
+| **Kiro** | `npx spec-superflow@latest install-kiro` | 已提供安装器 |
+| **Windsurf** | `npx spec-superflow@latest install-windsurf` | 已提供安装器 |
+| **Qwen Code** | `npx spec-superflow@latest install-qwen` | 已提供安装器 |
+| **Amazon Q Developer** | `npx spec-superflow@latest install-amazon-q` | 已提供安装器 |
+| **Roo Code** | `npx spec-superflow@latest install-roocode` | 已提供安装器 |
+| **Continue** | `npx spec-superflow@latest install-continue` | 已提供安装器 |
+| **Pi** | `npx spec-superflow@latest install-pi` | 已提供安装器 |
 | **OpenCode** | `.opencode/plugins/spec-superflow.js` 或 `.agents/skills -> skills/` | 已提供入口 |
 | **WorkBuddy** | `npx spec-superflow@latest install-workbuddy` | 已提供安装器 |
 | **Trae IDE / TRAE Work** | `.trae/skills/`、`~/.trae/skills/` 或上传 zip/.skill | 手动/导入 |
 
-> 完整安装说明见 [INSTALL.md](INSTALL.md)。
+> 共支持 17 个平台，完整安装说明见 [INSTALL.md](INSTALL.md)，支持矩阵见 [docs/platform-matrix.md](docs/platform-matrix.md)。
 
 ### CLI 工具链
 
@@ -121,10 +129,18 @@ npx spec-superflow list          # 或通过 npx 使用
 | `ssf audit <dir>` | 生成决策点审计报告 |
 | `ssf install-cursor` | 部署到 Cursor `.cursor/` 目录 |
 | `ssf install-workbuddy` | 部署到 WorkBuddy marketplace 并启用技能 |
+| `ssf install-cline` | 部署到 Cline `.cline/` + `.clinerules/` |
+| `ssf install-kiro` | 部署到 Kiro `.kiro/` + `.kiro/steering/` |
+| `ssf install-windsurf` | 部署到 Windsurf `.windsurf/` + `.windsurf/rules/` |
+| `ssf install-qwen` | 部署到 Qwen Code `.qwen/` + `.qwen/rules/` |
+| `ssf install-amazon-q` | 部署到 Amazon Q `.amazonq/` + `.amazonq/rules/` |
+| `ssf install-roocode` | 部署到 Roo Code `.roo/` + `.roo/rules/` |
+| `ssf install-continue` | 部署到 Continue `.continue/` + `.continue/rules/` |
+| `ssf install-pi` | 部署到 Pi `.pi/skills/`（无规则目录） |
 
 ### 版本
 
-- 当前版本：`v0.8.12`
+- 当前版本：`v0.8.13`
 - 自包含插件，不需要运行时安装 OpenSpec 或 Superpowers
 - 上游来源：[Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) 和 [obra/superpowers](https://github.com/obra/superpowers)
 - 版本历史见 [CHANGELOG.md](CHANGELOG.md)

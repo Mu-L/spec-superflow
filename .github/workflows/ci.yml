@@ -30,6 +30,34 @@ jobs:
         run: node scripts/lint/lint-skills.mjs --include token
         continue-on-error: true
 
+  platform-install-smoke:
+    name: Platform Install Smoke (8 platforms)
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.ref, 'refs/tags/')"
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Smoke test all 8 platform installers (--local)
+        shell: bash
+        run: |
+          set -e
+          declare -A SKILLS=( [cline]=.cline/skills [kiro]=.kiro/skills [windsurf]=.windsurf/skills [qwen]=.qwen/skills [amazon-q]=.amazonq/skills [roocode]=.roo/skills [continue]=.continue/skills [pi]=.pi/skills )
+          declare -A RULES=( [cline]=.clinerules/phase-guard.md [kiro]=.kiro/steering/phase-guard.md [windsurf]=.windsurf/rules/phase-guard.md [qwen]=.qwen/rules/phase-guard.md [amazon-q]=.amazonq/rules/phase-guard.md [roocode]=.roo/rules/phase-guard.md [continue]=.continue/rules/phase-guard.md )
+          for id in cline kiro windsurf qwen amazon-q roocode continue pi; do
+            tmp="$(mktemp -d)"
+            ( cd "$tmp" && node "$GITHUB_WORKSPACE/scripts/install-$id.mjs" --local "$GITHUB_WORKSPACE" > /dev/null )
+            [ -d "$tmp/${SKILLS[$id]}" ] || { echo "FAIL $id: skills dir missing"; exit 1; }
+            count="$(ls "$tmp/${SKILLS[$id]}" | wc -l | tr -d ' ')"
+            [ "$count" -ge 9 ] || { echo "FAIL $id: only $count skills (expected 9)"; exit 1; }
+            if [ -n "${RULES[$id]:-}" ]; then
+              [ -f "$tmp/${RULES[$id]}" ] || { echo "FAIL $id: phase-guard rule missing"; exit 1; }
+            fi
+            echo "OK $id — 9 skills, rule=${RULES[$id]:-none}"
+          done
+          echo "All 8 platform installers passed smoke test."
+
   release:
     name: Release
     runs-on: ubuntu-latest

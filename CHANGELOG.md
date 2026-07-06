@@ -4,6 +4,33 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.8.13] - 2026-07-06
+
+### Added
+
+- **跨平台安装支持扩展至 17 个平台** — 新增 8 个 AI 编程平台的一键安装器，平台覆盖面对齐 comet：
+  - `ssf install-cline` — Cline（`.cline/skills/` + `.clinerules/phase-guard.md`）
+  - `ssf install-kiro` — Kiro（`.kiro/skills/` + `.kiro/steering/phase-guard.md`）
+  - `ssf install-windsurf` — Windsurf（`.windsurf/skills/` + `.windsurf/rules/phase-guard.md`）
+  - `ssf install-qwen` — Qwen Code（`.qwen/skills/` + `.qwen/rules/phase-guard.md`）
+  - `ssf install-amazon-q` — Amazon Q Developer（`.amazonq/skills/` + `.amazonq/rules/phase-guard.md`）
+  - `ssf install-roocode` — Roo Code（`.roo/skills/` + `.roo/rules/phase-guard.md`）
+  - `ssf install-continue` — Continue（`.continue/skills/` + `.continue/rules/phase-guard.md`）
+  - `ssf install-pi` — Pi（`.pi/skills/`，无规则目录，手动 `/workflow-start`）
+- **共享安装器架构** — 新增 `scripts/lib/platforms.mjs`（平台注册表）与 `scripts/lib/install.mjs`（共享安装器），8 个 `install-<id>.mjs` 为薄壳调用，路径全部与 comet `src/core/platforms.ts` 交叉核实。`install-cursor.mjs` / `install-workbuddy` 保持原样。
+- **平台支持矩阵文档** — 新增 `docs/platform-matrix.md`，17 平台 × Skills/Rules/Hooks 三层接入透明化。
+- **CLI 命令** — `ssf` 注册 8 个 `install-<id>` 子命令，`npx spec-superflow@latest install-<id>` 一键部署。
+
+### Changed
+
+- INSTALL.md 平台总览表从 9 行扩至 17 行，新增 8 个平台完整安装/升级/卸载/验证章节。
+- README.md 安装区表格与 CLI 命令表同步扩充。
+
+### Notes
+
+- Kiro / Windsurf / Qwen / Amazon Q 原生支持 hooks，但 spec-superflow 的 SessionStart 钩子在这些平台的可用性未逐一验证，v0.8.13 暂不写入 hook 配置；上下文注入由 phase-guard 规则（平台自动加载）承担，后续版本验证后补齐。
+- 剩余 14 个 comet 平台（Junie / Bob / ForgeCode / Crush / iFlow / CoStrict / Factory / KiloCode / Auggie / Lingma / KimiCode / Antigravity ×2 等）留待 v0.8.14+ 分批跟进。
+
 ## [0.8.12] - 2026-07-06
 
 ### Fixed
