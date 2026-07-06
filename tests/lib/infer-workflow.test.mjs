@@ -63,6 +63,47 @@ describe('infer-workflow: inferMode()', () => {
     assert.equal(result.mode, 'hotfix', `Expected hotfix but got ${result.mode}: ${result.reason}`);
   });
 
+  it('infers hotfix for small Java code changes', () => {
+    const changeDir = mkdtempSync(join(tempDir, 'java-hotfix-'));
+    writeFileSync(join(changeDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
+    writeFileSync(join(changeDir, 'proposal.md'), '# Proposal\nFix null check in src/Main.java');
+    writeFileSync(join(changeDir, 'tasks.md'), '- [ ] Fix null check in src/Main.java\n- [ ] Add regression test');
+
+    const result = inferMode(changeDir);
+
+    assert.equal(result.mode, 'hotfix', `Expected hotfix but got ${result.mode}: ${result.reason}`);
+  });
+
+  it('does not infer tweak for multi-task Java and Go code changes', () => {
+    const javaDir = mkdtempSync(join(tempDir, 'java-code-'));
+    writeFileSync(join(javaDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
+    writeFileSync(join(javaDir, 'proposal.md'), '# Proposal\nRefactor service in src/Main.java');
+    writeFileSync(join(javaDir, 'tasks.md'), '- [ ] Update service in src/Main.java\n- [ ] Add unit test\n- [ ] Update integration test');
+
+    const goDir = mkdtempSync(join(tempDir, 'go-code-'));
+    writeFileSync(join(goDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
+    writeFileSync(join(goDir, 'proposal.md'), '# Proposal\nRefactor handler in cmd/server/main.go');
+    writeFileSync(join(goDir, 'tasks.md'), '- [ ] Update handler in cmd/server/main.go\n- [ ] Add unit test\n- [ ] Update wiring');
+
+    assert.equal(inferMode(javaDir).mode, 'full');
+    assert.equal(inferMode(goDir).mode, 'full');
+  });
+
+  it('does not infer tweak for multi-task Python and Rust code changes', () => {
+    const pythonDir = mkdtempSync(join(tempDir, 'python-code-'));
+    writeFileSync(join(pythonDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
+    writeFileSync(join(pythonDir, 'proposal.md'), '# Proposal\nRefactor worker in app/worker.py');
+    writeFileSync(join(pythonDir, 'tasks.md'), '- [ ] Update worker in app/worker.py\n- [ ] Add unit test\n- [ ] Update scheduler');
+
+    const rustDir = mkdtempSync(join(tempDir, 'rust-code-'));
+    writeFileSync(join(rustDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
+    writeFileSync(join(rustDir, 'proposal.md'), '# Proposal\nRefactor parser in src/parser.rs');
+    writeFileSync(join(rustDir, 'tasks.md'), '- [ ] Update parser in src/parser.rs\n- [ ] Add unit test\n- [ ] Update caller');
+
+    assert.equal(inferMode(pythonDir).mode, 'full');
+    assert.equal(inferMode(rustDir).mode, 'full');
+  });
+
   it('infers tweak for config/doc-only change (≤4 tasks)', () => {
     writeFileSync(join(tempDir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: auto');
     writeFileSync(join(tempDir, 'proposal.md'), '# Proposal\nUpdate README.md');

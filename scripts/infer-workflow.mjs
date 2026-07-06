@@ -4,15 +4,26 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readState } from './lib/state-loader.mjs';
 
-const CODE_EXTS = new Set([
+const CODE_EXTS = [
   'mjs', 'js', 'ts', 'jsx', 'tsx', 'cjs',
-]);
-const CONFIG_DOC_EXTS = new Set([
+  'java', 'go', 'py', 'pyw', 'rb', 'php',
+  'rs', 'kt', 'kts', 'swift',
+  'c', 'h', 'cc', 'cpp', 'cxx', 'hpp',
+  'cs', 'fs', 'fsx', 'vb',
+  'scala', 'sc', 'clj', 'cljs', 'ex', 'exs',
+  'dart', 'lua', 'r', 'pl', 'pm', 'sh', 'bash', 'zsh', 'fish',
+];
+const CONFIG_DOC_EXTS = [
   'md', 'json', 'yaml', 'yml', 'toml', 'ini',
   'txt', 'html', 'css',
-]);
+];
+const CODE_EXT_SET = new Set(CODE_EXTS);
+const CONFIG_DOC_EXT_SET = new Set(CONFIG_DOC_EXTS);
+const FILE_EXT_PATTERN = [...CODE_EXTS, ...CONFIG_DOC_EXTS]
+  .sort((a, b) => b.length - a.length)
+  .join('|');
 
-const FILE_RE = /\b\/?(?:[\w-]+\/)*[\w-]+\.(mjs|js|ts|jsx|tsx|cjs|md|json|yaml|yml|toml|ini|txt|html|css)\b/gi;
+const FILE_RE = new RegExp(`\\b/?(?:[\\w-]+/)*[\\w-]+\\.(${FILE_EXT_PATTERN})\\b`, 'gi');
 
 function readText(dir, name) {
   const p = join(dir, name);
@@ -69,8 +80,8 @@ function inferMode(changeDir) {
     const parts = f.split('.');
     return parts[parts.length - 1].toLowerCase();
   });
-  const codeFileCount = allExts.filter(e => CODE_EXTS.has(e)).length;
-  const configDocOnly = codeFileCount === 0 && allExts.every(e => CONFIG_DOC_EXTS.has(e));
+  const codeFileCount = allExts.filter(e => CODE_EXT_SET.has(e)).length;
+  const configDocOnly = codeFileCount === 0 && allExts.every(e => CONFIG_DOC_EXT_SET.has(e));
 
   // No artifacts → safe default to full
   if (taskCount === 0 && fileCount === 0) {
