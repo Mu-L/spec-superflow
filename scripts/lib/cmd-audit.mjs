@@ -26,10 +26,22 @@ function formatTimestamp(ts) {
   return String(ts);
 }
 
+function isConfirmed(value) {
+  return value === true || value === 'true';
+}
+
+function formatDpResult(state, dp) {
+  const result = formatResult(state[`dp_${dp}_result`]);
+  if (dp === 0 && result === 'not recorded' && isConfirmed(state.dp_0_confirmed)) {
+    return 'confirmed';
+  }
+  return result;
+}
+
 function generateReport(changeDir, state) {
   const rows = [];
   for (let i = 0; i <= 7; i++) {
-    const result = formatResult(state[`dp_${i}_result`]);
+    const result = formatDpResult(state, i);
     const timestamp = formatTimestamp(state[`dp_${i}_timestamp`]);
     rows.push({ dp: i, name: DP_NAMES[i], result, timestamp });
   }

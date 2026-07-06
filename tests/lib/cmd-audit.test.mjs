@@ -69,6 +69,24 @@ describe('cmd-audit: generateReport()', () => {
     assert.ok(report.includes('6/8 未记录'), `Expected 6/8 missing but got: ${report}`);
   });
 
+  it('treats confirmed DP-0 state as recorded without dp_0_result', () => {
+    const state = {
+      change_name: 'test',
+      state: 'specifying',
+      dp_0_decisions: 'scope confirmed',
+      dp_0_confirmed: 'true',
+      dp_0_timestamp: '2026-07-06T10:50:00Z',
+    };
+
+    const report = generateReport(tempDir, state);
+
+    assert.ok(
+      report.includes('| DP-0 | 用户确认门禁 | confirmed | 2026-07-06T10:50:00Z |'),
+      `Expected DP-0 to be recorded from dp_0_confirmed but got: ${report}`,
+    );
+    assert.ok(report.includes('1/8 已记录'), `Expected 1/8 recorded but got: ${report}`);
+  });
+
   it('marks unrecorded DPs with interpretation hint', () => {
     const state = {
       change_name: 'test',

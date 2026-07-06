@@ -31,6 +31,7 @@ Ask: change name + one-sentence intent, known constraints, related optimizations
 After confirmation:
 ```bash
 ssf state set <change-dir> dp_0_decisions "<summary>"
+ssf state set <change-dir> dp_0_result confirmed
 ssf state set <change-dir> dp_0_confirmed true
 ssf state set <change-dir> dp_0_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```

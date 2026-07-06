@@ -152,8 +152,8 @@ describe('state-loader: writeState()', () => {
   it('writes all DP fields (0-7)', () => {
     const state = {
       state: 'closing',
-      // DP-0 uses different fields (decisions + confirmed, not result)
       dp_0_decisions: 'scope: csv export only, tech: nestjs',
+      dp_0_result: 'confirmed: scope ok',
       dp_0_confirmed: 'true',
       dp_0_timestamp: '2026-07-01T08:00:00Z',
       dp_1_result: 'confirmed: csv export',
@@ -169,9 +169,26 @@ describe('state-loader: writeState()', () => {
 
     const content = readFileSync(join(tempDir, '.spec-superflow.yaml'), 'utf-8');
     assert.ok(content.includes('dp_0_decisions: scope: csv export only, tech: nestjs'));
+    assert.ok(content.includes('dp_0_result: confirmed: scope ok'));
     assert.ok(content.includes('dp_0_confirmed: true'));
     assert.ok(content.includes('dp_1_result: confirmed: csv export'));
     assert.ok(content.includes('dp_5_result: null'));
+  });
+
+  it('round-trips dp_0_result when updated through state loader', () => {
+    stateLoader.writeState(tempDir, {
+      state: 'exploring',
+      dp_0_decisions: 'scope confirmed',
+      dp_0_confirmed: 'true',
+    });
+
+    stateLoader.updateField(tempDir, 'dp_0_result', 'confirmed: manual');
+
+    const content = readFileSync(join(tempDir, '.spec-superflow.yaml'), 'utf-8');
+    const state = stateLoader.readState(tempDir);
+
+    assert.ok(content.includes('dp_0_result: confirmed: manual'));
+    assert.equal(state.dp_0_result, 'confirmed: manual');
   });
 
   it('round-trips state through write then read', () => {
