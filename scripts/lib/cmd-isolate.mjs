@@ -1,5 +1,5 @@
 // scripts/lib/cmd-isolate.mjs — `ssf isolate` CLI wrapper around ensure-branch.mjs
-import { spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,15 @@ export async function run(args) {
     process.exit(2);
   }
   const extra = values.force ? ['--force'] : [];
-  const r = spawnSync('node', [ENSURE, changeDir, changeName, ...extra], { stdio: 'inherit', timeout: 15000 });
-  process.exit(r.status ?? 1);
+  // Literal command ('node') + argument array, no shell — same safe form as
+  // cmd-install-*.mjs. execFileSync throws on non-zero exit; propagate its status.
+  try {
+    execFileSync('node', [ENSURE, changeDir, changeName, ...extra], {
+      stdio: 'inherit',
+      timeout: 15000,
+    });
+    process.exit(0);
+  } catch (e) {
+    process.exit(e.status ?? 1);
+  }
 }

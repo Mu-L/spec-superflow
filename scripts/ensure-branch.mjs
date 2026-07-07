@@ -5,7 +5,12 @@
 // agent MUST stop and ask the user instead of silently editing main/master.
 //
 // Usage: node ensure-branch.mjs <change-dir> [change-name] [--force]
-import { spawnSync } from 'node:child_process';
+//
+// Security note: every git invocation uses execFileSync with a LITERAL command
+// ('git') and an argument ARRAY (no shell), mirroring the pattern proven safe
+// in install-cursor.mjs / install.mjs. There is no string-form shell command and
+// no variable command name, so there is no command-injection surface.
+import { execFileSync } from 'node:child_process';
 
 const changeDir = process.argv[2];
 const changeName = process.argv[3];
@@ -16,23 +21,33 @@ if (!changeDir) {
   process.exit(2);
 }
 
-function run(cmd, args, opts = {}) {
-  return spawnSync(cmd, args, {
-    encoding: 'utf-8',
-    cwd: changeDir,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...opts,
-  });
-}
-
 const PROTECTED = ['main', 'master'];
 
-const branchRes = run('git', ['branch', '--show-current']);
-if (branchRes.status !== 0) {
+// Run git with a literal command + argument array (no shell). Returns
+// { ok, stdout, stderr }; never throws so callers can branch on ok.
+function tryGit(args) {
+  try {
+    const stdout = execFileSync('git', args, {
+      encoding: 'utf-8',
+      cwd: changeDir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { ok: true, stdout: stdout || '', stderr: '' };
+  } catch (e) {
+    return {
+      ok: false,
+      stdout: (e.stdout || '').toString(),
+      stderr: (e.stderr || '').toString(),
+    };
+  }
+}
+
+const branchRes = tryGit(['branch', '--show-current']);
+if (!branchRes.ok) {
   console.error('ensure-branch: could not determine current git branch. Is <change-dir> inside a git repository?');
   process.exit(1);
 }
-const branch = (branchRes.stdout || '').trim();
+const branch = branchRes.stdout.trim();
 
 if (!PROTECTED.includes(branch)) {
   console.log(`ensure-branch: already isolated on branch '${branch}'. Proceed with implementation edits.`);
@@ -46,20 +61,20 @@ const name = changeName || repoName;
 const worktreePath = `../${repoName}-${name}`;
 
 // Preferred: git worktree
-const wt = run('git', ['worktree', 'add', worktreePath, '-b', name]);
-if (wt.status === 0) {
+const wt = tryGit(['worktree', 'add', worktreePath, '-b', name]);
+if (wt.ok) {
   console.log(`ensure-branch: created git worktree at ${worktreePath} on branch '${name}'. Make all implementation edits there.`);
   process.exit(0);
 }
-console.error(`ensure-branch: worktree creation failed: ${(wt.stderr || wt.stdout || 'unknown').trim()}`);
+console.error(`ensure-branch: worktree creation failed: ${wt.stderr.trim() || wt.stdout.trim() || 'unknown'}`);
 
 // Fallback: local branch
-const br = run('git', ['switch', '-c', name]);
-if (br.status === 0) {
+const br = tryGit(['switch', '-c', name]);
+if (br.ok) {
   console.log(`ensure-branch: created branch '${name}' via git switch -c. Make implementation edits there.`);
   process.exit(0);
 }
-console.error(`ensure-branch: branch creation failed: ${(br.stderr || br.stdout || 'unknown').trim()}`);
+console.error(`ensure-branch: branch creation failed: ${br.stderr.trim() || br.stdout.trim() || 'unknown'}`);
 
 // Both failed → require explicit approval to edit in place.
 if (force) {
