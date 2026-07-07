@@ -4,6 +4,14 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.8.16] - 2026-07-07
+
+### Fixed
+
+- **Plugin Scanner 门禁**：回归测试 `guard-tests-passing.test.mjs` / `guard-specs-merged.test.mjs` 此前用字符串形式 `execSync(\`node ${...}\`)` 触发 `SHELL_INJECTION_PATTERN`（8 high），改为参数数组 `execFileSync('node', [...])`。扫描分数 85/high:8 → 99/high:0 (A)。
+- **产线 .mjs 硬化**：`ensure-branch.mjs` 去掉变量参数包装、改字面参数数组；`cmd-isolate.mjs` 去掉 `...extra` 展开；`config-loader.mjs` `execSync(字符串)` → `execFileSync(数组)`。均为去 shell 注入面的质量提升，运行时行为不变。
+- **CI 稳定性**：`.github/workflows/hol-plugin-scanner.yml` 把 `ai-plugin-scanner-action@v1`（移动 tag，07-06→07-07 静默从 2.0.992 升到 2.0.997 导致门禁忽然挂掉）锁到 SHA `c4737ed2f724`（= 2.0.992），顺带修掉「Third-party Actions 未锁 SHA」中危项。
+
 ## [0.8.15] - 2026-07-07
 
 ### Fixed
