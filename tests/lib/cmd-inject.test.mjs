@@ -2,6 +2,9 @@
 // Tests for scripts/lib/cmd-inject.mjs
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 let generatePhaseGuard, toCursorMdc, toCopilotInstructions;
@@ -112,5 +115,100 @@ describe('cmd-inject: toCopilotInstructions()', () => {
     assert.ok(result.includes('## Allowed'));
     // Should NOT contain the change name in heading
     assert.ok(!result.includes('# Phase Guard: test-change'));
+  });
+});
+
+describe('cmd-inject: platform resolution', () => {
+  let resolvePlatforms, detectProjectPlatforms;
+
+  before(async () => {
+    const modulePath = join(process.cwd(), 'scripts/lib/cmd-inject.mjs');
+    const mod = await import(modulePath);
+    resolvePlatforms = mod.resolvePlatforms;
+    detectProjectPlatforms = mod.detectProjectPlatforms;
+  });
+
+  it('resolves explicit all to all supported platforms', () => {
+    const result = resolvePlatforms('all', process.cwd());
+    assert.deepEqual(result, { ok: true, platforms: ['claude', 'cursor', 'copilot', 'gemini'] });
+  });
+
+  it('detects Cursor from .cursor marker', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssf-inject-cursor-'));
+    try {
+      mkdirSync(join(dir, '.cursor'), { recursive: true });
+      assert.deepEqual(detectProjectPlatforms(dir), ['cursor']);
+      assert.deepEqual(resolvePlatforms(undefined, dir), { ok: true, platforms: ['cursor'] });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects omitted platforms when no marker exists', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssf-inject-none-'));
+    try {
+      const result = resolvePlatforms(undefined, dir);
+      assert.equal(result.ok, false);
+      assert.match(result.message, /--platforms/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects omitted platforms when multiple markers exist', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssf-inject-multi-'));
+    try {
+      mkdirSync(join(dir, '.cursor'), { recursive: true });
+      mkdirSync(join(dir, '.claude'), { recursive: true });
+      const result = resolvePlatforms(undefined, dir);
+      assert.equal(result.ok, false);
+      assert.match(result.message, /multiple/i);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('cmd-inject: CLI writes', () => {
+  const CLI = join(process.cwd(), 'scripts/spec-superflow.mjs');
+
+  function runInject(cwd, changeDir, extraArgs = []) {
+    try {
+      const stdout = execFileSync(process.execPath, [CLI, 'inject', changeDir, ...extraArgs], { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+      return { exitCode: 0, stdout, stderr: '' };
+    } catch (err) {
+      return { exitCode: err.status || 1, stdout: err.stdout?.toString() || '', stderr: err.stderr?.toString() || err.message };
+    }
+  }
+
+  it('cursor-only injection does not write GEMINI.md', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ssf-inject-cli-cursor-'));
+    try {
+      const change = join(root, 'change');
+      mkdirSync(change, { recursive: true });
+      writeFileSync(join(change, '.spec-superflow.yaml'), 'state: exploring\nworkflow: full\nchange_name: inject-test\n');
+      const result = runInject(root, change, ['--platforms', 'cursor']);
+      assert.equal(result.exitCode, 0, result.stdout + result.stderr);
+      assert.equal(existsSync(join(root, '.cursor', 'rules', 'phase-guard.mdc')), true);
+      assert.equal(existsSync(join(root, 'GEMINI.md')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('omitted ambiguous platform exits before writing files', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ssf-inject-cli-none-'));
+    try {
+      const change = join(root, 'change');
+      mkdirSync(change, { recursive: true });
+      writeFileSync(join(change, '.spec-superflow.yaml'), 'state: exploring\nworkflow: full\nchange_name: inject-test\n');
+      const result = runInject(root, change);
+      assert.equal(result.exitCode, 2);
+      assert.match(result.stderr || result.stdout, /--platforms/);
+      assert.equal(existsSync(join(root, '.cursor')), false);
+      assert.equal(existsSync(join(root, 'GEMINI.md')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

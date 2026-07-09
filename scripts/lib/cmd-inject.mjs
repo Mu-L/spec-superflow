@@ -134,6 +134,10 @@ const PHASE_GUARD_MARKERS = {
   end: '<!-- spec-superflow-phase-guard-end -->\n',
 };
 
+function unique(values) {
+  return [...new Set(values)];
+}
+
 function generatePhaseGuard(state) {
   const template = PHASE_TEMPLATES[state.state] || PHASE_TEMPLATES['exploring'];
   return template
@@ -185,6 +189,48 @@ function writeFile(filePath, content) {
   writeFileSync(filePath, content, 'utf-8');
 }
 
+export function parsePlatformList(value) {
+  if (!value) return null;
+  const requested = value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
+  if (requested.includes('all')) {
+    if (requested.length > 1) return ['__invalid_all_combo__'];
+    return [...SUPPORTED_PLATFORMS];
+  }
+  return unique(requested);
+}
+
+export function detectProjectPlatforms(projectRoot) {
+  const detected = [];
+  if (existsSync(join(projectRoot, '.claude'))) detected.push('claude');
+  if (existsSync(join(projectRoot, '.cursor')) || existsSync(join(projectRoot, '.cursor', 'rules'))) detected.push('cursor');
+  if (existsSync(join(projectRoot, '.github', 'copilot-instructions.md'))) detected.push('copilot');
+  if (existsSync(join(projectRoot, 'GEMINI.md'))) detected.push('gemini');
+  return detected;
+}
+
+export function resolvePlatforms(value, projectRoot) {
+  const explicit = parsePlatformList(value);
+  if (explicit) {
+    if (explicit.includes('__invalid_all_combo__')) {
+      return { ok: false, message: '`all` cannot be combined with other platforms. Use --platforms all or a comma-separated platform list.' };
+    }
+    const invalid = explicit.filter(p => !SUPPORTED_PLATFORMS.includes(p));
+    if (invalid.length > 0) {
+      return { ok: false, message: `Unsupported platform(s): ${invalid.join(', ')}. Supported: ${SUPPORTED_PLATFORMS.join(', ')} or all` };
+    }
+    return { ok: true, platforms: explicit };
+  }
+
+  const detected = detectProjectPlatforms(projectRoot);
+  if (detected.length === 1) {
+    return { ok: true, platforms: detected };
+  }
+  if (detected.length === 0) {
+    return { ok: false, message: 'Could not detect target platform. Re-run with --platforms claude|cursor|copilot|gemini or --platforms all.' };
+  }
+  return { ok: false, message: `Detected multiple platform markers (${detected.join(', ')}). Re-run with --platforms <platform> or --platforms all.` };
+}
+
 const PLATFORM_WRITERS = {
   claude(base, projectRoot) {
     const alwaysDir = join(projectRoot, '.claude', 'always');
@@ -217,20 +263,17 @@ export async function run(args) {
 
   const changeDir = positionals[0];
   if (!changeDir) {
-    console.error('Usage: ssf inject <change-dir> [--platforms claude,cursor,copilot,gemini] [--json]');
+    console.error('Usage: ssf inject <change-dir> [--platforms claude,cursor,copilot,gemini|all] [--json]');
     process.exit(2);
   }
 
-  const requested = values.platforms
-    ? values.platforms.split(',').map(p => p.trim().toLowerCase())
-    : SUPPORTED_PLATFORMS;
-
-  const invalid = requested.filter(p => !SUPPORTED_PLATFORMS.includes(p));
-  if (invalid.length > 0) {
-    console.error(`Unsupported platform(s): ${invalid.join(', ')}`);
-    console.error(`Supported: ${SUPPORTED_PLATFORMS.join(', ')}`);
+  const projectRoot = process.cwd();
+  const resolved = resolvePlatforms(values.platforms, projectRoot);
+  if (!resolved.ok) {
+    console.error(resolved.message);
     process.exit(2);
   }
+  const requested = resolved.platforms;
 
   // Read state (graceful fallback if missing)
   const stateFile = join(changeDir, '.spec-superflow.yaml');
@@ -241,7 +284,6 @@ export async function run(args) {
 
   // Generate base phase-guard content
   const base = generatePhaseGuard(state);
-  const projectRoot = process.cwd();
   const outputs = [];
 
   for (const platform of requested) {

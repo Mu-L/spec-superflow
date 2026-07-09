@@ -40,7 +40,7 @@ Commands:
   sync <change-dir>     Merge delta specs into main specs
   config [options]      Display or modify configuration
   state <sub> <dir>     Manage .spec-superflow.yaml state (init|check|transition|get|rebuild)
-  inject <dir>          Generate phase-guard artifacts for Claude/Cursor/Copilot/Gemini
+  inject <dir>          Generate phase-guard artifacts; use --platforms <name|all> when platform is ambiguous
   audit <dir>           Generate decision-point-audit.md from .spec-superflow.yaml
   install-cursor        Deploy skills/scripts/docs to .cursor/ (local Cursor setup)
   install-workbuddy     Deploy skills to WorkBuddy marketplace and enable them
