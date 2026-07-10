@@ -38,6 +38,13 @@ function runSsf(args) {
 }
 
 describe('ssf config --resolve-model', () => {
+  it('documents model profile resolution in CLI help', () => {
+    const result = runSsf(['--help']);
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.match(result.stdout, /config --resolve-model <profile>/);
+    assert.match(result.stdout, /without switching models/);
+  });
+
   it('prints configured model profile JSON', () => {
     writeConfig({ models: { mechanical: 'vendor-small' } });
     const result = runSsf(['config', '--resolve-model', 'mechanical']);
