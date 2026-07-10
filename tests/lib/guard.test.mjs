@@ -183,6 +183,12 @@ describe('guard: hotfix minimal contract', () => {
     }
   }
 
+  function prepareFreshHotfixState() {
+    writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nHotfix contract.\n');
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state init ${dir}`);
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} workflow hotfix`);
+  }
+
   it('allows exploring to bridging without full planning artifacts', () => {
     const result = run('exploring', 'bridging');
     assert.equal(result.exitCode, 0, JSON.stringify(result.output));
@@ -196,18 +202,36 @@ describe('guard: hotfix minimal contract', () => {
   });
 
   it('blocks bridging to approved-for-build without DP-3', () => {
-    writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nHotfix contract.\n');
-    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state init ${dir}`);
-    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} workflow hotfix`);
+    prepareFreshHotfixState();
     const result = run('bridging', 'approved-for-build');
     assert.equal(result.exitCode, 1);
     assert.ok(result.output.checks.some(c => c.dimension === 'dp3-approved'));
   });
 
+  it('rejects bridging to approved-for-build when DP-3 is recorded but not approved', () => {
+    prepareFreshHotfixState();
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} dp_3_result rejected`);
+    const result = run('bridging', 'approved-for-build');
+    assert.equal(result.exitCode, 1);
+    const dp3Check = result.output.checks.find(c => c.dimension === 'dp3-approved');
+    assert.ok(dp3Check);
+    assert.equal(dp3Check.pass, false);
+  });
+
   it('allows bridging to approved-for-build with fresh contract and DP-3', () => {
+    prepareFreshHotfixState();
     execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} dp_3_result approved`);
     const result = run('bridging', 'approved-for-build');
     assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+  });
+
+  it('allows approved-for-build to executing with fresh contract and approved DP-3', () => {
+    prepareFreshHotfixState();
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} dp_3_result approved: user confirmed minimal contract`);
+    const result = run('approved-for-build', 'executing');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    const dims = result.output.checks.map(c => c.dimension);
+    assert.deepEqual(dims, ['contract-current', 'dp3-approved']);
   });
 });
 
