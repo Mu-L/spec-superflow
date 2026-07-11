@@ -9,6 +9,7 @@ The format loosely follows Keep a Changelog.
 ### Added
 
 - **#37 — Model profiles**：可在 `spec-superflow.config.json` 中为 `mechanical`、`standard`、`strong`、`review` 配置平台模型 ID，并用 `ssf config --resolve-model <profile>` 只读解析；不执行跨平台自动模型切换，也不新增 runtime dependency。
+- **#38 — Minimality discipline**：code-reviewer 现要求用任务依据审查无请求的依赖、配置、抽象与无关重构；保留 TDD、验证、安全和错误处理，不引入 Ponytail 或任何 runtime dependency。
 
 ## [0.8.17] - 2026-07-10
 

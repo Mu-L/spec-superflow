@@ -23,4 +23,15 @@ describe('minimality discipline: broad reviewer', () => {
     assert.match(prompt, /Do not use line count as evidence/);
     assert.match(prompt, /do not recommend removing\s+required tests, validation, security, or error handling/);
   });
+
+  it('records #38 without adding a Ponytail dependency', () => {
+    const changelog = read('CHANGELOG.md');
+    const pkg = JSON.parse(read('package.json'));
+    const lock = JSON.parse(read('package-lock.json'));
+    assert.match(changelog, /#38/);
+    assert.match(changelog, /不引入 Ponytail 或任何 runtime dependency/);
+    assert.equal(pkg.dependencies?.ponytail, undefined);
+    assert.equal(pkg.devDependencies?.ponytail, undefined);
+    assert.equal(lock.packages['node_modules/ponytail'], undefined);
+  });
 });
