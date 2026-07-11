@@ -4,6 +4,12 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [Unreleased]
+
+### Added
+
+- **#37 — Model profiles**：可在 `spec-superflow.config.json` 中为 `mechanical`、`standard`、`strong`、`review` 配置平台模型 ID，并用 `ssf config --resolve-model <profile>` 只读解析；不执行跨平台自动模型切换，也不新增 runtime dependency。
+
 ## [0.8.17] - 2026-07-10
 
 ### Fixed

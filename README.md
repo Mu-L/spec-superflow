@@ -256,6 +256,38 @@ Delta spec 的规范路径是 `specs/<capability>/spec.md`；扁平的 `specs/<c
 
 ---
 
+## 模型 Profile（可选配置）
+
+可以在项目根目录的 `spec-superflow.config.json` 中，为不同执行角色配置平台模型 ID：
+
+```json
+{
+  "models": {
+    "mechanical": "vendor-small",
+    "standard": "vendor-standard",
+    "strong": "vendor-strong",
+    "review": "vendor-review"
+  }
+}
+```
+
+| Profile | 角色 |
+|---|---|
+| `mechanical` | 低成本、机械性修改 |
+| `standard` | 集成与判断任务 |
+| `strong` | 架构、设计与最终审查 |
+| `review` | 与 diff 匹配的代码审查 |
+
+使用以下命令只读解析一个 profile：
+
+```bash
+ssf config --resolve-model mechanical
+```
+
+该命令只解析本地配置，不调用平台 API，也不切换当前会话模型。支持 `model` 字段的平台由控制器显式传入返回的模型 ID；若结果为 `configured: false`，则没有自动选择能力，不能臆造供应商模型，仍须遵守现有的显式指定 `model` 要求。
+
+---
+
 ## FAQ
 
 <details>

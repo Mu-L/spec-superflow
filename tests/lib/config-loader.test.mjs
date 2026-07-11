@@ -44,6 +44,64 @@ describe('config-loader: getDefaults()', () => {
   });
 });
 
+describe('config-loader: resolveModelProfile()', () => {
+  let configLoader;
+
+  before(async () => {
+    const modulePath = join(process.cwd(), 'scripts/lib/config-loader.mjs');
+    configLoader = await import(modulePath);
+  });
+
+  it('exposes the supported model profiles in order', () => {
+    assert.deepStrictEqual(configLoader.MODEL_PROFILES, [
+      'mechanical', 'standard', 'strong', 'review',
+    ]);
+  });
+
+  it('resolves all four configured profiles without changing their model identifiers', () => {
+    const config = {
+      models: {
+        mechanical: 'vendor-small', standard: 'vendor-standard',
+        strong: 'vendor-strong', review: 'vendor-review',
+      },
+    };
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'mechanical'), {
+      profile: 'mechanical', model: 'vendor-small', configured: true,
+    });
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'standard'), {
+      profile: 'standard', model: 'vendor-standard', configured: true,
+    });
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'strong'), {
+      profile: 'strong', model: 'vendor-strong', configured: true,
+    });
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'review'), {
+      profile: 'review', model: 'vendor-review', configured: true,
+    });
+  });
+
+  it('returns an explicit unmapped result for a known profile', () => {
+    assert.deepStrictEqual(configLoader.resolveModelProfile({}, 'strong'), {
+      profile: 'strong', model: null, configured: false,
+    });
+  });
+
+  it('does not let partial model mappings affect missing known profiles', () => {
+    assert.deepStrictEqual(
+      configLoader.resolveModelProfile({ models: { review: 'vendor-review' } }, 'standard'),
+      { profile: 'standard', model: null, configured: false },
+    );
+  });
+
+  it('rejects unknown and malformed mappings deterministically', () => {
+    assert.throws(() => configLoader.resolveModelProfile({}, 'fast'),
+      /Unknown model profile 'fast'.*mechanical.*standard.*strong.*review/);
+    assert.throws(() => configLoader.resolveModelProfile({ models: { review: '   ' } }, 'review'),
+      /models\.review must be a non-empty string/);
+    assert.throws(() => configLoader.resolveModelProfile({ models: { review: 42 } }, 'review'),
+      /models\.review must be a non-empty string/);
+  });
+});
+
 describe('config-loader: loadConfig()', () => {
   let configLoader;
 

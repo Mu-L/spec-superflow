@@ -21,6 +21,30 @@ const DEFAULTS = {
   },
 };
 
+export const MODEL_PROFILES = Object.freeze([
+  'mechanical', 'standard', 'strong', 'review',
+]);
+
+export function resolveModelProfile(config, profile) {
+  if (!MODEL_PROFILES.includes(profile)) {
+    throw new Error(
+      `Unknown model profile '${profile}'. Supported profiles: ${MODEL_PROFILES.join(', ')}`,
+    );
+  }
+
+  const models = config?.models;
+  if (!models || !Object.hasOwn(models, profile)) {
+    return { profile, model: null, configured: false };
+  }
+
+  const model = models[profile];
+  if (typeof model !== 'string' || model.trim().length === 0) {
+    throw new Error(`Invalid model profile: models.${profile} must be a non-empty string`);
+  }
+
+  return { profile, model, configured: true };
+}
+
 function deepMerge(target, source) {
   const result = { ...target };
   for (const key of Object.keys(source)) {

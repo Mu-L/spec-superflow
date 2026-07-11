@@ -1,7 +1,7 @@
 // ssf config — display or modify configuration
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadConfig, getDefaults } from './config-loader.mjs';
+import { loadConfig, getDefaults, resolveModelProfile } from './config-loader.mjs';
 
 export async function run(args) {
   const config = loadConfig(process.cwd());
@@ -10,6 +10,20 @@ export async function run(args) {
   if (args.length === 0) {
     console.log('Effective configuration:');
     console.log(JSON.stringify(config, null, 2));
+    return;
+  }
+
+  if (args[0] === '--resolve-model') {
+    if (!args[1]) {
+      console.error('Usage: ssf config --resolve-model <profile>');
+      process.exit(2);
+    }
+    try {
+      console.log(JSON.stringify(resolveModelProfile(config, args[1])));
+    } catch (error) {
+      console.error(error.message);
+      process.exit(1);
+    }
     return;
   }
 
@@ -34,7 +48,7 @@ export async function run(args) {
   if (args[0] === '--set' && args[1]) {
     const eqIdx = args[1].indexOf('=');
     if (eqIdx === -1) {
-      console.error('Usage: ssf config --set <path>=<value>');
+      console.error('Usage: ssf config [--get <path>] [--set <path>=<value>] [--resolve-model <profile>]');
       process.exit(2);
     }
     const path = args[1].slice(0, eqIdx);
@@ -69,6 +83,6 @@ export async function run(args) {
     return;
   }
 
-  console.error('Usage: ssf config [--get <path>] [--set <path>=<value>]');
+  console.error('Usage: ssf config [--get <path>] [--set <path>=<value>] [--resolve-model <profile>]');
   process.exit(2);
 }

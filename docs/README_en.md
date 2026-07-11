@@ -237,6 +237,38 @@ You: "add authorization to the API"
 
 ---
 
+## Model Profiles (Optional Configuration)
+
+Configure platform model IDs for execution roles in the project-root `spec-superflow.config.json`:
+
+```json
+{
+  "models": {
+    "mechanical": "vendor-small",
+    "standard": "vendor-standard",
+    "strong": "vendor-strong",
+    "review": "vendor-review"
+  }
+}
+```
+
+| Profile | Role |
+|---|---|
+| `mechanical` | Low-cost, routine edits |
+| `standard` | Integration and judgment work |
+| `strong` | Architecture, design, and final review |
+| `review` | Code review that matches the diff |
+
+Resolve a profile in read-only mode:
+
+```bash
+ssf config --resolve-model mechanical
+```
+
+This command only resolves local configuration, does not call platform APIs, and does not switch models in the current session. The controller explicitly passes the returned model ID only to platforms whose dispatch supports a `model` field. A `configured: false` result means automatic selection is unavailable: never invent a provider model and continue to meet the existing explicit `model` requirement.
+
+---
+
 ## FAQ
 
 <details>
