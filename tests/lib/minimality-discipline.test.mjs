@@ -11,6 +11,10 @@ describe('minimality discipline: broad reviewer', () => {
     const skill = read('skills/code-reviewer/SKILL.md');
     const prompt = read('skills/code-reviewer/code-reviewer-prompt.md');
     assert.match(skill, /## Minimality And Scope/);
+    assert.match(skill, /missing task requirement and diff line/);
+    assert.match(skill, /Important for merge-blocking complexity/);
+    assert.match(skill, /Minor for safe/);
+    assert.match(skill, /never score by line count/);
     assert.match(prompt, /## Minimality And Scope/);
     assert.match(prompt, /unrequested dependency, configuration surface, abstraction, or unrelated refactor/);
     assert.match(prompt, /missing task requirement and diff line/);
