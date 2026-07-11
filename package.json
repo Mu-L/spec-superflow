@@ -39,7 +39,7 @@
     "url": "https://github.com/MageByte-Zero/spec-superflow"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

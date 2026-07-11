@@ -15,8 +15,8 @@ npm run build
 # Run integration tests
 npm test
 
-# Run single test (Node 22+ native test runner)
-node --test --experimental-strip-types tests/e2e.test.ts --test-name-pattern="parseDeltaSpec"
+# Run single test (Node 20+ native test runner)
+node --test tests/e2e.test.mjs --test-name-pattern="parseDeltaSpec"
 
 # Validate artifacts (uses docs/examples/ data)
 npm run validate
@@ -120,7 +120,7 @@ exploring → specifying → bridging → approved-for-build → executing → c
 
 ## CI/CD (`.github/workflows/ci.yml`)
 
-- **Push/PR to `main`**: Build + test on Node 22 + Plugin Scanner
+- **Push/PR to `main`**: Build + test on a Node 20/22 matrix + Plugin Scanner
 - **Tag push `v*`**: Build + test → `gh release create` → `npm publish --provenance --access public`
 - Release requires `NPM_TOKEN` secret and `id-token: write` permission for provenance
 

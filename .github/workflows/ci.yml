@@ -14,7 +14,7 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/')"
     strategy:
       matrix:
-        node-version: [22]
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -26,6 +26,11 @@ jobs:
       - run: npm test
       - name: Check version consistency
         run: node scripts/check-version-consistency.mjs
+      - name: CLI smoke
+        run: |
+          node scripts/spec-superflow.mjs doctor
+          node scripts/spec-superflow.mjs --version
+          node scripts/spec-superflow.mjs config --get execution.inlineThreshold
       - name: Token efficiency lint (warning only)
         run: node scripts/lint/lint-skills.mjs --include token
         continue-on-error: true
@@ -34,11 +39,14 @@ jobs:
     name: Platform Install Smoke (8 platforms)
     runs-on: ubuntu-latest
     if: "!startsWith(github.ref, 'refs/tags/')"
+    strategy:
+      matrix:
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       - name: Smoke test all 8 platform installers (--local)
         shell: bash
         run: |
