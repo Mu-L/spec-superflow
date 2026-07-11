@@ -77,7 +77,20 @@ For changes with multiple execution batches. Dispatch implementer subagent per t
 5. **Mark complete**: Append to `.superpowers/sdd/progress.md`: `Task N: complete (commits <base7>..<head7>, review clean)`
 
 ### Model Selection
-Use least powerful model per role: mechanical (cheap), integration/judgment (standard), architecture/design (most capable), review (match diff), final review (most capable). Always specify model explicitly.
+Use the configured profile that matches the task role. Resolve it before dispatch:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" config --resolve-model <profile>
+```
+
+| Profile | Role |
+|---|---|
+| `mechanical` | Cheap, routine edits |
+| `standard` | Integration and judgment work |
+| `strong` | Architecture, design, and final review |
+| `review` | Review that matches the diff |
+
+For platforms whose dispatch supports a `model` field, explicitly pass the resolved `model` value. If the result is `configured: false`, automatic selection is unavailable: do not invent a provider model and do not bypass the existing requirement to specify `model` explicitly. Resolution only reads configuration; it does not switch models.
 
 ### Progress Ledger
 Track in `.superpowers/sdd/progress.md`. Check for existing ledger — completed tasks are done. After each batch: `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> batches_completed <N>`.

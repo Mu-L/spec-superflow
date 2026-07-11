@@ -41,6 +41,7 @@ Commands:
   version <semver>      Sync version to all manifest files
   sync <change-dir>     Merge delta specs into main specs
   config [options]      Display or modify configuration
+  config --resolve-model <profile>  Resolve a configured model profile without switching models
   state <sub> <dir>     Manage .spec-superflow.yaml state (init|check|transition|get|rebuild)
   inject <dir>          Generate phase-guard artifacts; use --platforms <name|all> when platform is ambiguous
   audit <dir>           Generate decision-point-audit.md from .spec-superflow.yaml
@@ -80,6 +81,7 @@ Examples:
   ssf version 0.4.0
   ssf sync changes/v0.3.0-workflow-enhancements/
   ssf config --get execution.inlineThreshold
+  ssf config --resolve-model mechanical
   ssf config --set verification.language=zh
   ssf state init changes/my-change/
   ssf state check changes/my-change/
