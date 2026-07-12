@@ -17,7 +17,7 @@
 |------|------|------|------|
 | Claude Code | marketplace | `/plugin update` | `/plugin uninstall` |
 | Cursor | skills 目录 / GitHub 导入 / 一键脚本 | 重新运行脚本 | 删除 `.cursor/skills/` |
-| OpenAI Codex CLI | Plugin Directory / marketplace | `codex plugin update` | `codex plugin remove` |
+| OpenAI Codex CLI | Plugin Directory / marketplace | marketplace refresh + re-add | `codex plugin remove` |
 | OpenAI Codex App | Plugins 面板 / marketplace | CLI 更新后 App 面板启用 | App 面板禁用 |
 | GitHub Copilot CLI | marketplace | `copilot plugin update` | `copilot plugin uninstall` |
 | Gemini CLI | `gemini extensions install` | `gemini extensions update` | `gemini extensions uninstall` |
@@ -160,25 +160,38 @@ codex
 
 ```bash
 codex plugin marketplace add hashgraph-online/awesome-codex-plugins
+codex plugin add spec-superflow@awesome-codex-plugins
+```
+
+### 直接安装指定 release tag
+
+当社区 marketplace 镜像尚未同步时，可直接指定本仓库的 release tag：
+
+```bash
+codex plugin marketplace add MageByte-Zero/spec-superflow --ref v0.9.0
 codex plugin add spec-superflow@spec-superflow
 ```
+
+这条路径绕过社区镜像延迟。
 
 ### 升级
 
 ```bash
-codex plugin update spec-superflow
+codex plugin marketplace upgrade awesome-codex-plugins
+codex plugin add spec-superflow@awesome-codex-plugins
+codex plugin list | rg spec-superflow
 ```
 
 ### 卸载
 
 ```bash
-codex plugin remove spec-superflow
+codex plugin remove spec-superflow@awesome-codex-plugins
 ```
 
 ### 验证
 
 ```bash
-codex plugin list | grep spec-superflow
+codex plugin list | rg spec-superflow
 ```
 
 ---
@@ -197,7 +210,7 @@ Codex App 的主流方式是 **Plugins** 面板。仓库已提供 `.codex-plugin
 
 ```bash
 codex plugin marketplace add hashgraph-online/awesome-codex-plugins
-codex plugin add spec-superflow@spec-superflow
+codex plugin add spec-superflow@awesome-codex-plugins
 ```
 
 然后**重启 Codex App**，在 **Plugins** 面板中启用 `spec-superflow`。
@@ -205,10 +218,12 @@ codex plugin add spec-superflow@spec-superflow
 ### 升级
 
 ```bash
-codex plugin update spec-superflow
+codex plugin marketplace upgrade awesome-codex-plugins
+codex plugin add spec-superflow@awesome-codex-plugins
+codex plugin list | rg spec-superflow
 ```
 
-更新后重启 Codex App。
+更新后重启 Codex App 并新开会话；旧会话不会热加载 skills。
 
 ### 卸载
 

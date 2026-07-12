@@ -74,10 +74,19 @@ codex
 
 # 或添加社区 marketplace 后安装
 codex plugin marketplace add hashgraph-online/awesome-codex-plugins
+codex plugin add spec-superflow@awesome-codex-plugins
+
+# 直接从指定 release tag 安装（不等待社区镜像同步）
+codex plugin marketplace add MageByte-Zero/spec-superflow --ref v0.9.0
 codex plugin add spec-superflow@spec-superflow
+
+# 升级并验证社区 marketplace 安装
+codex plugin marketplace upgrade awesome-codex-plugins
+codex plugin add spec-superflow@awesome-codex-plugins
+codex plugin list | rg spec-superflow
 ```
 
-Codex App 打开 **Plugins** 面板，安装或启用 `spec-superflow`。如果通过 CLI 安装，重启 App 后在 Plugins 面板启用。
+Codex App 打开 **Plugins** 面板，安装或启用 `spec-superflow`。通过 CLI 安装或升级后，重启 Codex App 并新开会话；旧会话不会热加载 skills。
 
 ### GitHub Copilot CLI
 
@@ -148,6 +157,7 @@ npx spec-superflow list          # 或通过 npx 使用
 ### 版本
 
 - 当前版本：`v0.9.0`
+- v0.9.0 highlights：支持 Node 20/22、model profiles 只读解析，以及 code-reviewer 的最小性审查；详见 [CHANGELOG.md](CHANGELOG.md)
 - 自包含插件，不需要运行时安装 OpenSpec 或 Superpowers
 - 上游来源：[Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) 和 [obra/superpowers](https://github.com/obra/superpowers)
 - 版本历史见 [CHANGELOG.md](CHANGELOG.md)

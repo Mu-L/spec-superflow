@@ -49,6 +49,29 @@ For each example in `docs/examples/`:
 - `spec-superflow.config.json` absence still works (backward compatible defaults)
 - `package.json` `bin` field points to correct entry script
 
+## AI Agent Marketplace Delivery
+
+- Review `README.md`, `INSTALL.md`, and `CHANGELOG.md` so their installation, upgrade, and release messages match.
+- Verify external marketplace delivery instead of treating a tag or npm publish as completion:
+
+  ```bash
+  node scripts/verify-marketplace-release.mjs \
+    --manifest-url https://raw.githubusercontent.com/hashgraph-online/awesome-codex-plugins/main/plugins/MageByte-Zero/spec-superflow/.codex-plugin/plugin.json \
+    --expected-version <semver>
+  ```
+
+- Use one 干净 Codex configuration directory for marketplace add, plugin add, and plugin list:
+
+  ```bash
+  CODEX_HOME="$(mktemp -d)"
+  export CODEX_HOME
+  codex plugin marketplace add hashgraph-online/awesome-codex-plugins
+  codex plugin add spec-superflow@awesome-codex-plugins
+  codex plugin list | rg spec-superflow
+  ```
+
+- If the remote marketplace version lags, submit and track the 同步 PR; wait for maintainers to merge and the generator to finish, then rerun the delivery verification and clean-Codex installation check.
+
 ## Publishing Checks
 
 - there are no stray `TODO` or `TBD` markers
