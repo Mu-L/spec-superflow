@@ -146,6 +146,51 @@ describe('execution plan data contract', () => {
     assert.ok(result.failures.includes('execution plan revision does not match state'));
   });
 
+  it('rejects a persisted plan when its state plan revision is deleted or differs', () => {
+    const plan = createPlan(changeDir, {
+      mode: 'sdd', source: 'default', rationale: 'freeze persisted plan revision',
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1'], depends_on: [] }],
+    });
+    writePlan(changeDir, plan);
+
+    const stateVariants = [
+      [
+        'state: approved-for-build',
+        'workflow: full',
+        'revision: 2',
+        `execution_plan_hash: ${plan.hash}`,
+      ],
+      [
+        'state: approved-for-build',
+        'workflow: full',
+        'revision: 2',
+        `execution_plan_hash: ${plan.hash}`,
+        'execution_plan_revision: null',
+      ],
+      [
+        'state: approved-for-build',
+        'workflow: full',
+        'revision: 2',
+        `execution_plan_hash: ${plan.hash}`,
+        'execution_plan_revision:',
+      ],
+      [
+        'state: approved-for-build',
+        'workflow: full',
+        'revision: 2',
+        `execution_plan_hash: ${plan.hash}`,
+        'execution_plan_revision: 3',
+      ],
+    ];
+
+    for (const state of stateVariants) {
+      writeFileSync(join(changeDir, '.spec-superflow.yaml'), `${state.join('\n')}\n`);
+      const result = validatePlan(changeDir, readPlan(changeDir));
+      assert.equal(result.valid, false);
+      assert.ok(result.failures.includes('execution plan revision does not match state'));
+    }
+  });
+
   it('records review receipts only for known waves', () => {
     const plan = createPlan(changeDir, {
       mode: 'sdd', source: 'default', rationale: 'review gate',

@@ -48,7 +48,7 @@ export function writePlan(changeDir, plan) {
   const paths = getOverlayPaths(changeDir);
   mkdirSync(paths.root, { recursive: true });
   atomicWrite(paths.executionPlan, `${JSON.stringify(plan, null, 2)}\n`);
-  writeExecutionPlanHash(changeDir, plan.hash);
+  writeExecutionPlanSummary(changeDir, plan);
   return readPlan(changeDir);
 }
 
@@ -70,6 +70,9 @@ export function validatePlan(changeDir, plan) {
   }
   if (plan?.workflow !== state.workflow) {
     failures.push('execution plan workflow does not match state');
+  }
+  if (state.execution_plan_revision !== plan?.revision) {
+    failures.push('execution plan revision does not match state');
   }
   if (state.revision != null && plan?.revision !== state.revision) {
     failures.push('execution plan revision does not match state');
@@ -196,17 +199,25 @@ function stableJson(value, seen = new WeakSet()) {
   return result;
 }
 
-function writeExecutionPlanHash(changeDir, hash) {
+function writeExecutionPlanSummary(changeDir, plan) {
   const statePath = join(changeDir, '.spec-superflow.yaml');
   const state = readState(changeDir);
   const original = existsSync(statePath)
     ? readFileSync(statePath, 'utf8')
     : `state: ${state.state}\nworkflow: ${state.workflow}\n`;
-  const line = `execution_plan_hash: ${hash}`;
-  const content = /^execution_plan_hash:\s*.*$/m.test(original)
-    ? original.replace(/^execution_plan_hash:\s*.*$/m, line)
-    : `${original.replace(/\n*$/, '\n')}\n${line}\n`;
+  const content = [
+    ['execution_plan_hash', plan.hash],
+    ['execution_plan_revision', plan.revision],
+  ].reduce((current, [field, value]) => setStateField(current, field, value), original);
   atomicWrite(statePath, content);
+}
+
+function setStateField(content, field, value) {
+  const line = `${field}: ${value}`;
+  const expression = new RegExp(`^${field}:\\s*.*$`, 'm');
+  return expression.test(content)
+    ? content.replace(expression, line)
+    : `${content.replace(/\n*$/, '\n')}\n${line}\n`;
 }
 
 function atomicWrite(targetPath, content) {
