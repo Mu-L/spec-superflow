@@ -250,6 +250,47 @@ describe('ssf execution', () => {
     assert.match(reviewed.stderr, /ancestor|range|base/i);
   });
 
+  it('treats a persisted pass receipt with a forged Git base as unusable', () => {
+    const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
+      '--wave', 'wave-1:serial:1.1', '--wave', 'wave-2:serial:1.2:wave-1']);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+
+    const receiptPath = join(changeDir, '.superpowers', 'sdd', 'reviews', Buffer.from('wave-1', 'utf8').toString('base64url') + '.json');
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+    receipt.base = '0000000000000000000000000000000000000001';
+    writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].receipt, null);
+    assert.deepEqual(shown.json.waves[1].blockers, ['wave-1']);
+    assert.equal(shown.json.waves[1].eligible, false);
+  });
+
+  it('treats a persisted pass receipt with a non-ancestral Git range as unusable', () => {
+    const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
+      '--wave', 'wave-1:serial:1.1', '--wave', 'wave-2:serial:1.2:wave-1']);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+
+    const receiptPath = join(changeDir, '.superpowers', 'sdd', 'reviews', Buffer.from('wave-1', 'utf8').toString('base64url') + '.json');
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+    receipt.base = gitRefs.head;
+    receipt.head = gitRefs.divergent;
+    writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].receipt, null);
+    assert.deepEqual(shown.json.waves[1].blockers, ['wave-1']);
+    assert.equal(shown.json.waves[1].eligible, false);
+  });
+
   it('does not show a pass receipt after its report evidence is deleted', () => {
     runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
       '--wave', 'wave-1:serial:1.1']);
