@@ -52,9 +52,9 @@ The plan names ordered execution waves, dependencies, and parallel/serial
 strategy. `ssf execution show <change-dir> --json` reports which current waves
 are eligible. Each completed wave must have a current
 `pass` review receipt, recorded with `ssf execution review`, before a dependent
-wave or `closing` can proceed. `ssf execution revise` only upgrades an existing
-`inline` or `batch-inline` plan to `sdd`; that revision invalidates old review
-receipts and is not a general wave or dependency editor. #47 recovery/switch/save
+wave or `closing` can proceed. `ssf execution revise` retains or upgrades an
+existing plan as `sdd`; that new revision invalidates old review receipts and
+does not permit a downgrade. #47 recovery/switch/save
 slash commands are not implemented; do not assume `/ssf:*` commands exist.
 
 ### `debugging`

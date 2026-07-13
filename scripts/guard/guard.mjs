@@ -20,7 +20,7 @@ const TRANSITION_CHECKS = {
   'specifying:bridging':            ['artifacts-exist', 'schema-valid'],
   'bridging:approved-for-build':    ['artifacts-exist', 'schema-valid', 'contract-fresh', 'dp-gate-passed'],
   'approved-for-build:executing':   ['artifacts-exist', 'contract-fresh', 'dp-gate-passed', 'execution-plan-ready'],
-  'executing:closing':              ['tasks-complete', 'tests-passing', 'specs-merged', 'execution-reviews-passed'],
+  'executing:closing':              ['tasks-complete', 'tests-passing', 'specs-merged', 'execution-plan-ready', 'execution-reviews-passed'],
 
   // Debugging side-path
   'executing:debugging':            [],

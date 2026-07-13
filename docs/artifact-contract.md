@@ -65,8 +65,8 @@ That JSON records each wave's dependencies and parallel/serial strategy; it is
 not stored in `execution-contract.md`. A current `pass` review receipt is
 required for every wave before dependent work or closing proceeds. `tweak` is
 exempt from execution-plan and review-receipt gates. `ssf execution revise`
-only upgrades an existing `inline` or `batch-inline` plan to `sdd`; it does not
-provide a general wave or dependency editor. #47 slash commands for recovery,
+retains or upgrades an existing plan as `sdd`, creates a new revision, and
+clears prior review receipts; it never permits a downgrade. #47 slash commands for recovery,
 switching, and manual save are not implemented, so `/ssf:*` commands must not
 be claimed.
 

@@ -417,6 +417,21 @@ describe('guard: execution control records', () => {
     assert.ok(!closing.output.checks.some(check => check.dimension === 'execution-reviews-passed'));
   });
 
+  it('rejects full and hotfix closing without a current execution plan', () => {
+    for (const workflow of ['full', 'hotfix']) {
+      prepareFreshFullState();
+      setStateField('workflow', workflow);
+      recordPassingClosingPrerequisites();
+
+      const result = run('executing', 'closing', workflow);
+      const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+      assert.equal(result.exitCode, 1, workflow);
+      assert.ok(planCheck, workflow);
+      assert.equal(planCheck.pass, false, workflow);
+      assert.match(planCheck.failures.join('\n'), /plan.*missing|execution plan/i, workflow);
+    }
+  });
+
   it('rejects stale and state-mismatched execution plans before executing', () => {
     prepareFreshFullState();
     createCurrentPlan();

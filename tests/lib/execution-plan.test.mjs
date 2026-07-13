@@ -74,7 +74,7 @@ describe('execution plan data contract', () => {
     }), /unknown wave/);
   });
 
-  it('rejects dependency cycles and duplicate tasks inside a parallel wave', () => {
+  it('rejects dependency cycles and duplicate task IDs in any wave', () => {
     assert.throws(() => createPlan(changeDir, {
       mode: 'sdd',
       source: 'default',
@@ -91,6 +91,16 @@ describe('execution plan data contract', () => {
       rationale: 'duplicate parallel task',
       waves: [{ id: 'wave-1', strategy: 'parallel', tasks: ['1.1', '1.1'], depends_on: [] }],
     }), /duplicate tasks/);
+
+    assert.throws(() => createPlan(changeDir, {
+      mode: 'sdd',
+      source: 'default',
+      rationale: 'duplicate task across waves',
+      waves: [
+        { id: 'wave-1', strategy: 'serial', tasks: ['1.1'], depends_on: [] },
+        { id: 'wave-2', strategy: 'parallel', tasks: ['1.1', '1.2'], depends_on: [] },
+      ],
+    }), /duplicate task.*1\.1/i);
   });
 
   it('changes the plan hash when plan content changes', () => {

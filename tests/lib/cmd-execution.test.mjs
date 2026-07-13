@@ -200,6 +200,50 @@ describe('ssf execution', () => {
     assert.equal(shown.json.waves[0].eligible, true);
   });
 
+  it('replans a current SDD plan with a new revision, renewed DP-4 state, and cleared receipts', () => {
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'full workflow default', '--wave', 'wave-1:serial:1.1']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+
+    const replanned = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
+      '--reason', 'split independent work into a recovery wave',
+      '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
+
+    assert.equal(replanned.exitCode, 0, replanned.stderr);
+    assert.equal(replanned.json.plan.revision, 2);
+    assert.equal(runSsf(['state', 'get', changeDir, 'execution_plan_revision', '--json']).json.value, 2);
+    assert.match(runSsf(['state', 'get', changeDir, 'dp_4_result', '--json']).json.value, /plan revision 2/);
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.current, true);
+    assert.equal(shown.json.waves[0].receipt, null);
+  });
+
+  it('recovers a stale SDD plan by revising it to current artifacts and clearing old receipts', () => {
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'full workflow default', '--wave', 'wave-1:serial:1.1']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('stale-wave-1.md'), '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+    writeFileSync(join(changeDir, 'tasks.md'), '# Tasks\n\n- [ ] 1.1 Updated task\n- [ ] 1.2 Recovery task\n');
+
+    const replanned = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
+      '--reason', 'refresh the plan after task scope changed',
+      '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
+
+    assert.equal(replanned.exitCode, 0, replanned.stderr);
+    assert.equal(replanned.json.plan.revision, 2);
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.current, true);
+    assert.equal(shown.json.waves[0].receipt, null);
+    assert.match(runSsf(['state', 'get', changeDir, 'dp_4_result', '--json']).json.value, /plan revision 2/);
+  });
+
   it('makes a failed current wave retryable while blocking dependents until its replacement pass receipt', () => {
     const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
       '--reason', 'repair reviews before dependent work',
@@ -273,14 +317,14 @@ describe('ssf execution', () => {
     assert.match(result.stderr, /--wave is required/);
   });
 
-  it('rejects malformed waves and invalid revision directions', () => {
+  it('rejects malformed waves and SDD plan downgrades', () => {
     const malformed = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'bad wave', '--wave', 'missing-parts']);
     assert.notEqual(malformed.exitCode, 0);
     assert.match(malformed.stderr, /wave/i);
 
     runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default', '--wave', 'wave-1:serial:1.1']);
-    const invalidRevision = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd', '--reason', 'not an upgrade', '--wave', 'wave-1:serial:1.1']);
+    const invalidRevision = runSsf(['execution', 'revise', changeDir, '--mode', 'inline', '--override', '--reason', 'downgrade', '--wave', 'wave-1:serial:1.1']);
     assert.notEqual(invalidRevision.exitCode, 0);
-    assert.match(invalidRevision.stderr, /inline|upgrade/i);
+    assert.match(invalidRevision.stderr, /sdd|downgrade|upgrade/i);
   });
 });

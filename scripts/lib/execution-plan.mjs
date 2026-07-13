@@ -205,6 +205,7 @@ function validateStructure(plan) {
   }
 
   const ids = new Set();
+  const taskOwners = new Map();
   for (const [index, wave] of plan.waves.entries()) {
     const label = `wave ${index + 1}`;
     if (!isObject(wave)) {
@@ -219,6 +220,14 @@ function validateStructure(plan) {
       failures.push(`${label} must include at least one task`);
     } else {
       if (wave.tasks.some(task => !isNonEmptyText(task))) failures.push(`${label} tasks must be non-empty strings`);
+      for (const task of wave.tasks.filter(isNonEmptyText)) {
+        const priorWaveId = taskOwners.get(task);
+        if (priorWaveId !== undefined) {
+          failures.push(`duplicate task id '${task}' appears in waves '${priorWaveId}' and '${wave.id}'`);
+        } else {
+          taskOwners.set(task, wave.id);
+        }
+      }
       if (wave.strategy === 'parallel' && new Set(wave.tasks).size !== wave.tasks.length) {
         failures.push(`parallel wave '${wave.id}' contains duplicate tasks`);
       }

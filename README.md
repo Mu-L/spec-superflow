@@ -145,7 +145,7 @@ npx spec-superflow list          # 或通过 npx 使用
 | `ssf handoff resolve <dir> <id> --decision <decision>` | 记录显式 handoff 决策 |
 | `ssf execution plan <dir> ...` | 为 full/hotfix 在 `<change>/.superpowers/sdd/execution-plan.json` 记录受 guard 保护的执行计划（SDD 默认） |
 | `ssf execution show <dir> [--json]` | 查看并校验当前执行计划、wave 与 receipt |
-| `ssf execution revise <dir> ...` | 仅将已有 inline/batch-inline 计划升级为 SDD，并生成新 revision |
+| `ssf execution revise <dir> ...` | 将已有计划保留/升级为 SDD，并生成新 revision；不允许降级 |
 | `ssf execution review <dir> ...` | 为一个计划 wave 记录 review receipt |
 | `ssf install-cursor` | 部署到 Cursor `.cursor/` 目录 |
 | `ssf install-workbuddy` | 部署到 WorkBuddy marketplace 插件（含 skills/rules/runtime） |
@@ -200,7 +200,8 @@ ssf execution plan changes/my-change --mode sdd --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
-# 只允许把已有 inline/batch-inline 计划升级为 sdd；不能用它编辑 wave 或依赖。
+# 将已有 inline/batch-inline 计划升级为 sdd，或重规划已有 sdd 计划；不能降级。
+# 每次修订都会生成新 revision 并清除旧 review receipt。
 ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation

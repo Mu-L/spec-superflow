@@ -51,11 +51,11 @@ function createAndPrintPlan(changeDir, values, revise) {
   const existing = readPlan(changeDir);
   if (revise) {
     if (!existing) throw new Error('Cannot revise an execution plan before it is created');
-    if (!['inline', 'batch-inline'].includes(existing.mode) || values.mode !== 'sdd') {
-      throw new Error('Execution plan revisions only allow inline or batch-inline to upgrade to sdd');
+    if (values.mode !== 'sdd') {
+      throw new Error('Execution plan revisions must retain or upgrade to sdd; execution-plan downgrades are not allowed');
     }
   } else if (existing) {
-    throw new Error('An execution plan already exists; use "ssf execution revise" for an allowed SDD upgrade');
+    throw new Error('An execution plan already exists; use "ssf execution revise" to create a new SDD revision');
   }
 
   if (values.override && values.mode === 'sdd') {

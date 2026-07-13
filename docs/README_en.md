@@ -244,7 +244,8 @@ ssf execution plan changes/my-change --mode sdd --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
-# Only upgrades an existing inline/batch-inline plan to sdd; it cannot edit waves or dependencies.
+# Retains/upgrades an existing plan as sdd; it can replan waves and dependencies,
+# creates a new revision, and clears old review receipts. Downgrades are rejected.
 ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
