@@ -686,15 +686,21 @@ changes/<change-name>/
 
 ### 受 guard 保护的执行计划
 
-full/hotfix 在 DP-4 必须保存 current execution plan；SDD 是 default。只有用户明确
-选择 explicit override，才可改为 `inline` 或 `batch-inline`；Batch Inline 始终串行，
-不会自动成为默认模式或表示并行。`tweak` 免除 execution plan 与 review receipt gate。
+full/hotfix 在 DP-4 必须保存 current execution plan 到
+`<change>/.superpowers/sdd/execution-plan.json`；它不属于 `execution-contract.md`。
+SDD 是 default。只有用户明确选择 explicit override，才可改为 `inline` 或
+`batch-inline`；Batch Inline 始终串行，不会自动成为默认模式或表示并行。`tweak`
+免除 execution plan 与 review receipt gate。
 
 ```bash
 ssf execution plan changes/my-change --mode sdd --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
+# 只允许把已有 inline/batch-inline 计划升级为 sdd；不能用它编辑 wave 或依赖。
+ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation
 ssf execution review changes/my-change --wave foundation --base <sha> --head <sha> \
   --report .superpowers/sdd/reviews/foundation.md --verdict pass
 ```

@@ -143,9 +143,9 @@ npx spec-superflow list          # 或通过 npx 使用
 | `ssf handoff list <dir>` | 列出 handoff 生命周期状态 |
 | `ssf handoff finish <dir> <id>` | 校验 handoff 结果 |
 | `ssf handoff resolve <dir> <id> --decision <decision>` | 记录显式 handoff 决策 |
-| `ssf execution plan <dir> ...` | 为 full/hotfix 记录受 guard 保护的执行计划（SDD 默认） |
+| `ssf execution plan <dir> ...` | 为 full/hotfix 在 `<change>/.superpowers/sdd/execution-plan.json` 记录受 guard 保护的执行计划（SDD 默认） |
 | `ssf execution show <dir> [--json]` | 查看并校验当前执行计划、wave 与 receipt |
-| `ssf execution revise <dir> ...` | 修订执行计划并生成新 revision |
+| `ssf execution revise <dir> ...` | 仅将已有 inline/batch-inline 计划升级为 SDD，并生成新 revision |
 | `ssf execution review <dir> ...` | 为一个计划 wave 记录 review receipt |
 | `ssf install-cursor` | 部署到 Cursor `.cursor/` 目录 |
 | `ssf install-workbuddy` | 部署到 WorkBuddy marketplace 插件（含 skills/rules/runtime） |
@@ -190,7 +190,8 @@ Delta spec 的规范路径是 `specs/<capability>/spec.md`；扁平的 `specs/<c
 ### 受 guard 保护的执行计划
 
 对 full/hotfix，DP-4 不是一段任意文本：开始实现前必须保存并校验 current
-execution plan。SDD 是 default；只有用户给出 explicit override 时，才能选择
+execution plan。它位于 `<change>/.superpowers/sdd/execution-plan.json`，不写入
+`execution-contract.md`。SDD 是 default；只有用户给出 explicit override 时，才能选择
 `inline` 或 `batch-inline`。后者始终是串行模式，绝不自动成为默认或冒充并行。
 `tweak` 保持轻量例外，不要求 execution plan 或 wave receipt。
 
@@ -199,6 +200,10 @@ ssf execution plan changes/my-change --mode sdd --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
+# 只允许把已有 inline/batch-inline 计划升级为 sdd；不能用它编辑 wave 或依赖。
+ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation
 # 每个 wave 都先写入非空 review report，再记录 receipt。
 ssf execution review changes/my-change --wave foundation --base <sha> --head <sha> \
   --report .superpowers/sdd/reviews/foundation.md --verdict pass
@@ -349,7 +354,7 @@ ssf config --resolve-model mechanical
 <details>
 <summary><strong>SDD (Subagent-Driven Development) 怎么工作的？</strong></summary>
 
-full/hotfix 默认 SDD：先保存带依赖与写入冲突检查的 execution plan，再按可执行 wave 派实施子代理；每个 wave 先有 review report，再写 `pass`/`fail` review receipt。只有用户 explicit override 才能选择 inline 或 Batch Inline；Batch Inline 仍是串行。进度台账防止会话压缩后丢失进度。
+full/hotfix 默认 SDD：先在 `<change>/.superpowers/sdd/execution-plan.json` 保存带依赖和策略的 execution plan，再按可执行 wave 派实施子代理；每个 wave 先有 review report，再写 `pass`/`fail` review receipt。只有用户 explicit override 才能选择 inline 或 Batch Inline；Batch Inline 仍是串行。进度台账防止会话压缩后丢失进度。
 
 </details>
 

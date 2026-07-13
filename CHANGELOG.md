@@ -8,7 +8,7 @@ The format loosely follows Keep a Changelog.
 
 ### Fixed
 
-- **#45 — Guarded execution control plane**: full/hotfix now default to SDD through a persisted execution plan; inline and Batch Inline require an explicit override, named waves record dependencies and write-conflict checks, and closing requires current `pass` review receipts for every wave.
+- **#45 — Guarded execution control plane**: full/hotfix now default to SDD through a persisted execution plan at `<change>/.superpowers/sdd/execution-plan.json`; inline and Batch Inline require an explicit override, named waves record dependencies and strategy, and closing requires current `pass` review receipts for every wave.
 
 ## [0.9.0] - 2026-07-11
 

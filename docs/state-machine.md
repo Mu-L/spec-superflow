@@ -42,18 +42,20 @@
 ## Execution Plan Control Plane
 
 For full/hotfix, DP-4 is the persisted execution plan created by `ssf execution
-plan`, not an arbitrary state value. SDD is the default. `inline` and
+plan` at `<change>/.superpowers/sdd/execution-plan.json`, not an arbitrary
+state value or content stored in `execution-contract.md`. SDD is the default. `inline` and
 `batch-inline` require an explicit user override; Batch Inline remains serial
 and is never an automatic default or a substitute for parallel execution.
 `tweak` is exempt from execution-plan and review-receipt requirements.
 
-The plan names ordered execution waves, dependencies, parallel/serial strategy,
-and write-conflict checks. `ssf execution show <change-dir> --json` reports
-which current waves are eligible. Each completed wave must have a current
+The plan names ordered execution waves, dependencies, and parallel/serial
+strategy. `ssf execution show <change-dir> --json` reports which current waves
+are eligible. Each completed wave must have a current
 `pass` review receipt, recorded with `ssf execution review`, before a dependent
-wave or `closing` can proceed. Revising a plan creates a new revision and
-invalidates old review receipts. #47 recovery/switch/save slash commands are
-not implemented; do not assume `/ssf:*` commands exist.
+wave or `closing` can proceed. `ssf execution revise` only upgrades an existing
+`inline` or `batch-inline` plan to `sdd`; that revision invalidates old review
+receipts and is not a general wave or dependency editor. #47 recovery/switch/save
+slash commands are not implemented; do not assume `/ssf:*` commands exist.
 
 ### `debugging`
 
@@ -129,7 +131,7 @@ The workflow must move back to `specifying` or `bridging` when:
 - current artifacts no longer define the intended behavior
 - `execution-contract.md` intent lock no longer matches `proposal.md` scope
 - the execution plan is stale, its mode no longer matches state, or its waves
-  need different dependencies or write-conflict treatment
+  need different dependencies
 
 ## Debugging State
 

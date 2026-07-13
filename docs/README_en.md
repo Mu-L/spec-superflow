@@ -232,17 +232,22 @@ You: "add authorization to the API"
 
 ### Guarded execution plans
 
-For full/hotfix, DP-4 is a persisted, current execution plan rather than an
-arbitrary text field. SDD is the default. `inline` and `batch-inline` require
-an explicit user override; Batch Inline remains serial and is never an
-automatic default or a claim of parallel work. `tweak` is exempt from this
-execution-plan and review-receipt gate.
+For full/hotfix, DP-4 is a persisted, current execution plan at
+`<change>/.superpowers/sdd/execution-plan.json`, rather than an arbitrary text
+field or content stored in `execution-contract.md`. SDD is the default.
+`inline` and `batch-inline` require an explicit user override; Batch Inline
+remains serial and is never an automatic default or a claim of parallel work.
+`tweak` is exempt from this execution-plan and review-receipt gate.
 
 ```bash
 ssf execution plan changes/my-change --mode sdd --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
+# Only upgrades an existing inline/batch-inline plan to sdd; it cannot edit waves or dependencies.
+ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation
 ssf execution review changes/my-change --wave foundation --base <sha> --head <sha> \
   --report .superpowers/sdd/reviews/foundation.md --verdict pass
 ```
@@ -317,11 +322,12 @@ Content-level detection, not timestamps: proposal scope changed, approved spec b
 <details>
 <summary><strong>How does SDD (Subagent-Driven Development) work?</strong></summary>
 
-For full/hotfix, the default SDD loop persists an execution plan with named
-waves, dependencies, and write-conflict checks before dispatching implementers.
-Each wave gets a review report and a `pass`/`fail` review receipt. Inline and
-Batch Inline require an explicit user override; Batch Inline remains serial.
-The progress ledger prevents session-compression loss.
+For full/hotfix, the default SDD loop persists an execution plan at
+`<change>/.superpowers/sdd/execution-plan.json` with named waves, dependencies,
+and strategies before dispatching implementers. Each wave gets a review report
+and a `pass`/`fail` review receipt. Inline and Batch Inline require an explicit
+user override; Batch Inline remains serial. The progress ledger prevents
+session-compression loss.
 
 </details>
 

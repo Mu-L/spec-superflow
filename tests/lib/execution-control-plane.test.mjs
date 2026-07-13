@@ -37,6 +37,33 @@ describe('execution control plane instructions', () => {
     }
   });
 
+  it('documents only the persisted execution-plan contract that #45 implements', () => {
+    const documents = [
+      'README.md',
+      'docs/README_en.md',
+      'INSTALL.md',
+      'templates/execution-contract.md',
+      'docs/state-machine.md',
+      'docs/artifact-contract.md',
+      'CHANGELOG.md',
+    ];
+
+    for (const path of documents) {
+      const content = read(path);
+      assert.match(content, /\.superpowers\/sdd\/execution-plan\.json/,
+        `${path} identifies the persisted execution-plan path`);
+      assert.doesNotMatch(content, /write[- ]?conflict/i,
+        `${path} does not claim an unpersisted write-conflict check`);
+    }
+
+    for (const path of ['README.md', 'docs/README_en.md', 'INSTALL.md']) {
+      const content = read(path);
+      assert.match(content, /execution revise/i, `${path} documents execution revise`);
+      assert.match(content, /only upgrades.*inline\/batch-inline.*sdd|只允许.*inline\/batch-inline.*升级为 sdd/i,
+        `${path} limits execution revise to inline/batch-inline upgrades to SDD`);
+    }
+  });
+
   it('keeps execution mode and review gates machine-backed in every entry point', () => {
     const workflowStart = read('skills/workflow-start/SKILL.md');
     const buildExecutor = read('skills/build-executor/SKILL.md');

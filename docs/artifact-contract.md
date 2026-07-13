@@ -52,19 +52,23 @@ Defines:
 - the approved intent lock
 - the approved behavior summary
 - implementation constraints
-- the persisted execution plan and named execution waves
+- the instructions for the execution plan and named execution waves
 - test obligations
 - review gates and their review receipts
 - escalation rules
 
 For full/hotfix, SDD is the default execution mode. `inline` and
 `batch-inline` require an explicit user override; Batch Inline remains serial
-and is never an automatic default. The execution plan records each wave's
-dependencies, parallel/serial strategy, and write-conflict check. A current
-`pass` review receipt is required for every wave before dependent work or
-closing proceeds. `tweak` is exempt from execution-plan and review-receipt
-gates. #47 slash commands for recovery, switching, and manual save are not
-implemented, so `/ssf:*` commands must not be claimed.
+and is never an automatic default. After approval, `ssf execution plan` writes
+the persisted execution plan to `<change>/.superpowers/sdd/execution-plan.json`.
+That JSON records each wave's dependencies and parallel/serial strategy; it is
+not stored in `execution-contract.md`. A current `pass` review receipt is
+required for every wave before dependent work or closing proceeds. `tweak` is
+exempt from execution-plan and review-receipt gates. `ssf execution revise`
+only upgrades an existing `inline` or `batch-inline` plan to `sdd`; it does not
+provide a general wave or dependency editor. #47 slash commands for recovery,
+switching, and manual save are not implemented, so `/ssf:*` commands must not
+be claimed.
 
 ## Mapping
 
@@ -73,7 +77,7 @@ implemented, so `/ssf:*` commands must not be claimed.
 - `proposal.md` -> intent lock and scope fence
 - `specs/` -> test obligations and acceptance checks
 - `design.md` -> implementation constraints
-- `tasks.md` -> execution-plan waves
+- `tasks.md` -> execution-plan waves in `<change>/.superpowers/sdd/execution-plan.json`
 
 ## Guardrail
 
