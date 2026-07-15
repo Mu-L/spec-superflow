@@ -20,8 +20,10 @@ describe('execution control plane instructions', () => {
     for (const path of documents) {
       const content = read(path);
       assert.match(content, /execution[ -]plan/i, `${path} documents execution plans`);
-      assert.match(content, /SDD.*default|default.*SDD/is, `${path} documents the SDD default`);
-      assert.match(content, /explicit.*override|override.*explicit/is, `${path} documents explicit overrides`);
+      assert.match(content, /execution recommend|execution-recommendation|执行模式推荐/i, `${path} documents execution-mode recommendations`);
+      assert.match(content, /execution-recommendation\.json|recommendation receipt|推荐凭据/i, `${path} documents persisted recommendation evidence`);
+      assert.match(content, /--confirm|用户.*确认|user.*confirm/is, `${path} documents user confirmation`);
+      assert.match(content, /acknowledge-recommendation|确认.*风险|acknowledg/is, `${path} documents acknowledgement for a non-recommended choice`);
       assert.match(content, /review receipt/i, `${path} documents review receipts`);
     }
 
@@ -117,8 +119,9 @@ describe('execution control plane instructions', () => {
 
     assert.match(workflowStart, /execution show <change-dir> --json/);
     assert.match(workflowStart, /execution plan <change-dir>/);
-    assert.match(buildExecutor, /full\/hotfix.*SDD.*default/is);
-    assert.match(buildExecutor, /explicit user override/i);
+    assert.match(buildExecutor, /execution recommend/i);
+    assert.match(buildExecutor, /user.*confirm|用户.*确认/is);
+    assert.match(buildExecutor, /acknowledge-recommendation/i);
     assert.match(buildExecutor, /parallel.*wave/is);
     assert.match(buildExecutor, /concurren(?:cy|t).*unavailable/i);
     assert.match(buildExecutor, /retryable.*replacement.*pass/is);
@@ -138,7 +141,9 @@ describe('execution control plane instructions', () => {
       'scripts/install-zcode.mjs',
     ]) {
       const content = read(path);
-      assert.match(content, /execution plan/);
+      assert.match(content, /execution recommend/);
+      assert.match(content, /--confirm/);
+      assert.match(content, /acknowledge-recommendation/);
       assert.match(content, /all.*pass.*review receipt.*closing/is);
       assert.match(content, /full\/hotfix.*tweak.*exempt/is);
     }

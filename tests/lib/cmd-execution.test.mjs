@@ -9,9 +9,28 @@ const CLI = join(process.cwd(), 'scripts/spec-superflow.mjs');
 let changeDir;
 let gitRefs;
 
-function runSsf(args, cwd = process.cwd()) {
+function runSsf(args, cwd = process.cwd(), { confirmPlan = true, acknowledgePlan = true, prepareRecommendation = true } = {}) {
+  const isPlan = args[0] === 'execution' && ['plan', 'revise'].includes(args[1]);
+  let effectiveArgs = args;
+  if (confirmPlan && isPlan && !effectiveArgs.includes('--confirm')) effectiveArgs = [...effectiveArgs, '--confirm'];
+  if (confirmPlan && acknowledgePlan && isPlan && requiresAcknowledgement(effectiveArgs) && !effectiveArgs.includes('--acknowledge-recommendation')) {
+    effectiveArgs = [...effectiveArgs, '--acknowledge-recommendation'];
+  }
+  if (prepareRecommendation && isPlan) {
+    const changePath = effectiveArgs[2];
+    const waves = effectiveArgs.flatMap((value, index) => value === '--wave' ? ['--wave', effectiveArgs[index + 1]] : []).filter(Boolean);
+    try {
+      execFileSync(process.execPath, [CLI, 'execution', 'recommend', changePath, ...waves], {
+        cwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'ignore', 'pipe'],
+      });
+    } catch {
+      // Let the requested command report malformed arguments through the usual test helper.
+    }
+  }
   try {
-    const stdout = execFileSync(process.execPath, [CLI, ...args], {
+    const stdout = execFileSync(process.execPath, [CLI, ...effectiveArgs], {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -25,6 +44,16 @@ function runSsf(args, cwd = process.cwd()) {
       json: tryJson(error.stdout?.toString() ?? ''),
     };
   }
+}
+
+function requiresAcknowledgement(args) {
+  const mode = args[args.indexOf('--mode') + 1];
+  const waves = args.flatMap((value, index) => value === '--wave' ? [args[index + 1]] : []).filter(Boolean);
+  const hasParallelWave = waves.some(wave => wave.split(':')[1] === 'parallel');
+  const plannedTaskCount = waves.reduce((count, wave) => count + (wave.split(':')[2]?.split(',').filter(Boolean).length || 0), 0);
+  const isSddRecommendation = hasParallelWave || waves.length > 1 || plannedTaskCount > 3;
+  const recommendedMode = isSddRecommendation ? 'sdd' : plannedTaskCount === 1 ? 'inline' : 'batch-inline';
+  return mode !== recommendedMode;
 }
 
 function runGit(directory, args) {
@@ -85,7 +114,7 @@ afterEach(() => {
 });
 
 describe('ssf execution', () => {
-  it('records DP-4 and state summary only after writing a valid default SDD plan', () => {
+  it('records DP-4 and state summary after a user-confirmed recommended SDD plan', () => {
     const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
       '--reason', 'full workflow default', '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
 
@@ -98,12 +127,80 @@ describe('ssf execution', () => {
     assert.match(runSsf(['state', 'get', changeDir, 'dp_4_result', '--json']).json.value, /plan revision 1/);
   });
 
-  it('rejects batch-inline without an explicit user override', () => {
-    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline',
-      '--reason', 'operator wants a batch', '--wave', 'wave-1:serial:1.1', '--json']);
+  it('lists applicable execution modes and recommends one from the change evidence', () => {
+    const result = runSsf(['execution', 'recommend', changeDir, '--json']);
+
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.deepEqual(result.json.recommendation.available_modes, ['inline', 'batch-inline', 'sdd']);
+    assert.equal(result.json.recommendation.recommendation.mode, 'batch-inline');
+    assert.equal(result.json.recommendation.facts.documented_task_count, 2);
+  });
+
+  it('requires a current persisted recommendation before a plan can be confirmed', () => {
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--confirm',
+      '--reason', 'independent implementation', '--wave', 'wave-1:parallel:1.1,1.2', '--json'], process.cwd(), {
+      prepareRecommendation: false,
+    });
 
     assert.notEqual(result.exitCode, 0);
-    assert.match(result.stderr, /override/i);
+    assert.match(result.stderr, /recommend/i);
+  });
+
+  it('rejects a mode that is not available for the current workflow', () => {
+    const workflow = runSsf(['state', 'set', changeDir, 'workflow', 'tweak']);
+    assert.equal(workflow.exitCode, 0, workflow.stderr);
+    const recommended = runSsf(['execution', 'recommend', changeDir,
+      '--wave', 'wave-1:serial:1.1']);
+    assert.equal(recommended.exitCode, 0, recommended.stderr);
+
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--confirm',
+      '--acknowledge-recommendation', '--reason', 'operator wants delegated review',
+      '--wave', 'wave-1:serial:1.1'], process.cwd(), { prepareRecommendation: false });
+
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stderr, /available|mode/i);
+  });
+
+  it('rejects a plan when the saved recommendation was for different waves', () => {
+    const recommended = runSsf(['execution', 'recommend', changeDir,
+      '--wave', 'wave-1:serial:1.1,1.2']);
+    assert.equal(recommended.exitCode, 0, recommended.stderr);
+
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--confirm',
+      '--reason', 'independent implementation', '--wave', 'wave-1:parallel:1.1,1.2', '--json'], process.cwd(), {
+      prepareRecommendation: false,
+    });
+
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stderr, /recommend/i);
+  });
+
+  it('requires a user confirmation before recording any execution plan', () => {
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'independent implementation', '--wave', 'wave-1:parallel:1.1,1.2', '--json'], process.cwd(), { confirmPlan: false });
+
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stderr, /confirm/i);
+  });
+
+  it('records an acknowledged non-recommended selection instead of an override', () => {
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'inline', '--confirm',
+      '--acknowledge-recommendation', '--reason', 'operator will keep this focused',
+      '--wave', 'wave-1:serial:1.1,1.2', '--json']);
+
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.equal(result.json.plan.mode, 'inline');
+    assert.equal(result.json.plan.source, 'user-confirmed');
+    assert.equal(result.json.plan.selection.followed_recommendation, false);
+    assert.equal(result.json.plan.selection.acknowledged_non_recommendation, true);
+  });
+
+  it('requires acknowledgement for a non-recommended selection', () => {
+    const result = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline',
+      '--reason', 'operator wants a batch', '--wave', 'wave-1:serial:1.1', '--json'], process.cwd(), { acknowledgePlan: false });
+
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stderr, /acknowledge/i);
   });
 
   it('rejects multiline and control-character reasons before mutating the plan or state', () => {
@@ -341,7 +438,7 @@ describe('ssf execution', () => {
   });
 
   it('increments revision when a batch-inline plan is revised to SDD', () => {
-    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--confirm', '--acknowledge-recommendation',
       '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1']);
     assert.equal(initial.exitCode, 0, initial.stderr);
 
@@ -353,8 +450,55 @@ describe('ssf execution', () => {
     assert.equal(runSsf(['state', 'get', changeDir, 'execution_plan_revision', '--json']).json.value, 2);
   });
 
+  it('requires confirmation and acknowledgement when a revision differs from its recommendation', () => {
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'parallel work needs review', '--wave', 'wave-1:parallel:1.1,1.2']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+
+    const recommended = runSsf(['execution', 'recommend', changeDir,
+      '--wave', 'wave-1:serial:1.1']);
+    assert.equal(recommended.exitCode, 0, recommended.stderr);
+
+    const missingConfirm = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
+      '--reason', 'retain SDD for the revised work', '--wave', 'wave-1:serial:1.1'], process.cwd(), {
+      confirmPlan: false,
+      prepareRecommendation: false,
+    });
+    assert.notEqual(missingConfirm.exitCode, 0);
+    assert.match(missingConfirm.stderr, /confirm/i);
+
+    const missingAcknowledgement = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd', '--confirm',
+      '--reason', 'retain SDD for the revised work', '--wave', 'wave-1:serial:1.1'], process.cwd(), {
+      acknowledgePlan: false,
+      prepareRecommendation: false,
+    });
+    assert.notEqual(missingAcknowledgement.exitCode, 0);
+    assert.match(missingAcknowledgement.stderr, /acknowledge/i);
+
+    const revised = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd', '--confirm',
+      '--acknowledge-recommendation', '--reason', 'retain SDD for the revised work',
+      '--wave', 'wave-1:serial:1.1', '--json'], process.cwd(), { prepareRecommendation: false });
+    assert.equal(revised.exitCode, 0, revised.stderr);
+    assert.equal(revised.json.plan.selection.confirmed, true);
+    assert.equal(revised.json.plan.selection.followed_recommendation, false);
+  });
+
+  it('requires a fresh recommendation after the prior plan before recording a revision', () => {
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'parallel work needs review', '--wave', 'wave-1:parallel:1.1,1.2']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+
+    const result = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd', '--confirm',
+      '--reason', 'reconfirm the same work as a new revision', '--wave', 'wave-1:parallel:1.1,1.2'], process.cwd(), {
+      prepareRecommendation: false,
+    });
+
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stderr, /recommend/i);
+  });
+
   it('invalidates receipts from the replaced plan revision', () => {
-    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--confirm', '--acknowledge-recommendation',
       '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1']);
     assert.equal(initial.exitCode, 0, initial.stderr);
     const reportPath = writeReviewReport('wave-1.md');
@@ -450,7 +594,7 @@ describe('ssf execution', () => {
 
   it('keeps the Task 1 state revision aligned through plan, show, revise, and show', () => {
     writeChangeDirectory(changeDir, 'full', 2);
-    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--confirm', '--acknowledge-recommendation',
       '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1', '--json']);
     assert.equal(initial.exitCode, 0, initial.stderr);
     assert.equal(initial.json.plan.revision, 2);
@@ -496,7 +640,7 @@ describe('ssf execution', () => {
     assert.match(malformed.stderr, /wave/i);
 
     runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default', '--wave', 'wave-1:serial:1.1']);
-    const invalidRevision = runSsf(['execution', 'revise', changeDir, '--mode', 'inline', '--override', '--reason', 'downgrade', '--wave', 'wave-1:serial:1.1']);
+    const invalidRevision = runSsf(['execution', 'revise', changeDir, '--mode', 'inline', '--reason', 'downgrade', '--wave', 'wave-1:serial:1.1']);
     assert.notEqual(invalidRevision.exitCode, 0);
     assert.match(invalidRevision.stderr, /sdd|downgrade|upgrade/i);
   });

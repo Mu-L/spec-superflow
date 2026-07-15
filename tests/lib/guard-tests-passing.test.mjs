@@ -64,8 +64,11 @@ function runClosingGuard(dir, extraState = '') {
       `state: executing\nworkflow: full\nchange_name: test\nspec_merged: true\n${extraState}`,
     );
     rmSync(join(dir, '.superpowers'), { recursive: true, force: true });
+    execFileSync('node', [CLI, 'execution', 'recommend', dir,
+      '--wave', 'close:serial:1.1'], { stdio: 'pipe', timeout: 5000 });
     execFileSync('node', [CLI, 'execution', 'plan', dir, '--mode', 'sdd',
-      '--reason', 'closing guard regression fixture', '--wave', 'close:serial:1.1'], { stdio: 'pipe', timeout: 5000 });
+      '--confirm', '--acknowledge-recommendation', '--reason', 'closing guard regression fixture',
+      '--wave', 'close:serial:1.1'], { stdio: 'pipe', timeout: 5000 });
     const report = join(dir, '.superpowers', 'sdd', 'reviews', 'close-review.md');
     mkdirSync(join(dir, '.superpowers', 'sdd', 'reviews'), { recursive: true });
     writeFileSync(report, 'review passed\n');

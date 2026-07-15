@@ -23,6 +23,9 @@ export function createPlan(changeDir, input) {
     workflow: state.workflow,
     revision: input?.revision ?? state.revision ?? 1,
   };
+  if (input?.recommendation !== undefined) plan.recommendation = input.recommendation;
+  if (input?.recommendationReceipt !== undefined) plan.recommendation_receipt = input.recommendationReceipt;
+  if (input?.selection !== undefined) plan.selection = input.selection;
   const failures = validateStructure(plan);
   if (failures.length > 0) throw new Error(`Invalid execution plan: ${failures.join('; ')}`);
   plan.hash = hashPlan(plan);
@@ -86,6 +89,29 @@ export function validatePlan(changeDir, plan) {
   }
   if (state.revision != null && plan?.revision !== state.revision) {
     failures.push('execution plan revision does not match state');
+  }
+  if (plan?.workflow !== 'tweak') {
+    if (plan?.recommendation === undefined) failures.push('execution plan recommendation is required for full/hotfix');
+    if (plan?.recommendation_receipt === undefined) failures.push('execution plan recommendation receipt is required for full/hotfix');
+    if (plan?.selection === undefined) failures.push('execution plan selection is required for full/hotfix');
+  }
+  if (plan?.recommendation_receipt !== undefined) {
+    if (plan.recommendation_receipt.artifacts_hash !== plan.artifacts_hash) failures.push('execution plan recommendation receipt artifacts hash does not match plan');
+    if (plan.recommendation_receipt.contract_hash !== plan.contract_hash) failures.push('execution plan recommendation receipt contract hash does not match plan');
+    if (plan.recommendation_receipt.workflow !== plan.workflow) failures.push('execution plan recommendation receipt workflow does not match plan');
+    if (stableJson(plan.recommendation_receipt.waves) !== stableJson(plan.waves)) failures.push('execution plan recommendation receipt waves do not match plan');
+    if (stableJson(plan.recommendation_receipt.recommendation) !== stableJson(plan.recommendation)) failures.push('execution plan recommendation receipt does not match plan recommendation');
+    const expectedRecommendationPlanRevision = plan.source === 'user-confirmed-revision'
+      ? plan.revision - 1
+      : null;
+    if (plan.recommendation_receipt.execution_plan_revision_at_recommendation !== expectedRecommendationPlanRevision) {
+      failures.push('execution plan recommendation receipt does not match the immediately prior plan revision');
+    }
+  }
+  if (plan?.selection !== undefined && plan?.recommendation?.recommendation?.mode) {
+    const followedRecommendation = plan.mode === plan.recommendation.recommendation.mode;
+    if (plan.selection.followed_recommendation !== followedRecommendation) failures.push('execution plan selection does not match recommended mode');
+    if (plan.selection.acknowledged_non_recommendation !== !followedRecommendation) failures.push('execution plan selection acknowledgement does not match recommended mode');
   }
   return { valid: failures.length === 0, failures, plan };
 }
@@ -269,8 +295,51 @@ function validateStructure(plan) {
   if (!EXECUTION_MODES.includes(plan.mode)) failures.push('execution plan mode is invalid');
   if (typeof plan.source !== 'string' || !plan.source.trim()) failures.push('execution plan source is required');
   if (!isNonEmptyText(plan.rationale)) failures.push('execution plan rationale is required');
-  if (plan.mode !== 'sdd' && plan.source !== 'user-override') {
-    failures.push(`${plan.mode || 'execution plan'} requires an explicit user override`);
+  if (plan.recommendation !== undefined) {
+    if (!isObject(plan.recommendation)) {
+      failures.push('execution plan recommendation must be an object');
+    } else {
+      if (!isObject(plan.recommendation.recommendation) || !EXECUTION_MODES.includes(plan.recommendation.recommendation.mode)) {
+        failures.push('execution plan recommendation mode is invalid');
+      }
+      if (!Array.isArray(plan.recommendation.recommendation?.reasons) || plan.recommendation.recommendation.reasons.some(reason => !isNonEmptyText(reason))) {
+        failures.push('execution plan recommendation reasons must be non-empty strings');
+      }
+      if (!isObject(plan.recommendation.facts)) failures.push('execution plan recommendation facts must be an object');
+      if (!Array.isArray(plan.recommendation.available_modes) || plan.recommendation.available_modes.some(mode => !EXECUTION_MODES.includes(mode))) {
+        failures.push('execution plan recommendation available_modes are invalid');
+      }
+    }
+  }
+  if (plan.recommendation_receipt !== undefined) {
+    if (!isObject(plan.recommendation_receipt)) {
+      failures.push('execution plan recommendation receipt must be an object');
+    } else {
+      if (!isObject(plan.recommendation_receipt.recommendation)) failures.push('execution plan recommendation receipt payload is required');
+      if (!Array.isArray(plan.recommendation_receipt.waves)) failures.push('execution plan recommendation receipt waves must be an array');
+      if (!isNullableHash(plan.recommendation_receipt.artifacts_hash)) failures.push('execution plan recommendation receipt artifacts hash is invalid');
+      if (!isNullableHash(plan.recommendation_receipt.contract_hash)) failures.push('execution plan recommendation receipt contract hash is invalid');
+      if (!isNonEmptyText(plan.recommendation_receipt.workflow)) failures.push('execution plan recommendation receipt workflow is invalid');
+      if (plan.recommendation_receipt.execution_plan_revision_at_recommendation !== null
+        && (!Number.isInteger(plan.recommendation_receipt.execution_plan_revision_at_recommendation)
+          || plan.recommendation_receipt.execution_plan_revision_at_recommendation < 1)) {
+        failures.push('execution plan recommendation receipt plan revision is invalid');
+      }
+      if (!isNonEmptyText(plan.recommendation_receipt.created_at)) failures.push('execution plan recommendation receipt timestamp is invalid');
+      if (typeof plan.recommendation_receipt.hash !== 'string' || !plan.recommendation_receipt.hash.startsWith('sha256:')) failures.push('execution plan recommendation receipt hash is invalid');
+    }
+  }
+  if (plan.selection !== undefined) {
+    if (!isObject(plan.selection)) {
+      failures.push('execution plan selection must be an object');
+    } else {
+      if (plan.selection.confirmed !== true) failures.push('execution plan selection must be confirmed');
+      if (typeof plan.selection.followed_recommendation !== 'boolean') failures.push('execution plan selection must record recommendation alignment');
+      if (typeof plan.selection.acknowledged_non_recommendation !== 'boolean') failures.push('execution plan selection must record non-recommendation acknowledgement');
+      if (plan.selection.followed_recommendation === plan.selection.acknowledged_non_recommendation) {
+        failures.push('execution plan selection acknowledgement conflicts with recommendation alignment');
+      }
+    }
   }
   if (!Array.isArray(plan.waves)) {
     failures.push('execution plan waves must be an array');
@@ -363,7 +432,11 @@ function stableJson(value, seen = new WeakSet()) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (seen.has(value)) throw new Error('circular plan data');
   seen.add(value);
-  if (Array.isArray(value)) return `[${value.map(item => stableJson(item, seen)).join(',')}]`;
+  if (Array.isArray(value)) {
+    const result = `[${value.map(item => stableJson(item, seen)).join(',')}]`;
+    seen.delete(value);
+    return result;
+  }
   const result = `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key], seen)}`).join(',')}}`;
   seen.delete(value);
   return result;
@@ -404,6 +477,10 @@ function isObject(value) {
 
 function isNonEmptyText(value) {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isNullableHash(value) {
+  return value === null || (typeof value === 'string' && value.startsWith('sha256:'));
 }
 
 function requireText(value, field) {

@@ -5,8 +5,9 @@ import { lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, s
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  createPlan, readPlan, recordReview, validatePlan, writePlan,
+  createPlan as createRawPlan, readPlan, recordReview, validatePlan, writePlan,
 } from '../../scripts/lib/execution-plan.mjs';
+import { createRecommendationReceipt, recommendExecutionModes } from '../../scripts/lib/execution-recommendation.mjs';
 import { readState } from '../../scripts/lib/state-loader.mjs';
 
 let changeDir;
@@ -49,7 +50,68 @@ function initializeGitRepository(directory) {
   return { base, head: runGit(directory, ['rev-parse', 'HEAD']) };
 }
 
+function createPlan(directory, input) {
+  const receipt = input.recommendationReceipt ?? createRecommendationReceipt(directory, input.waves);
+  const recommendation = input.recommendation ?? receipt.recommendation;
+  const followedRecommendation = input.mode === recommendation.recommendation.mode;
+  return createRawPlan(directory, {
+    ...input,
+    source: input.source === 'default' ? 'user-confirmed' : input.source,
+    recommendation,
+    recommendationReceipt: receipt,
+    selection: input.selection ?? {
+      confirmed: true,
+      followed_recommendation: followedRecommendation,
+      acknowledged_non_recommendation: !followedRecommendation,
+    },
+  });
+}
+
 describe('execution plan data contract', () => {
+  it('recommends inline for one small sequential task', () => {
+    const result = recommendExecutionModes({
+      workflow: 'full',
+      taskCount: 1,
+      inlineThreshold: 3,
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1'], depends_on: [] }],
+    });
+
+    assert.deepEqual(result.available_modes, ['inline', 'batch-inline', 'sdd']);
+    assert.equal(result.recommendation.mode, 'inline');
+    assert.match(result.recommendation.reasons.join('\n'), /single sequential task/i);
+  });
+
+  it('recommends batch-inline for a bounded sequential batch', () => {
+    const result = recommendExecutionModes({
+      workflow: 'hotfix',
+      taskCount: 3,
+      inlineThreshold: 3,
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1', '1.2', '1.3'], depends_on: [] }],
+    });
+
+    assert.equal(result.recommendation.mode, 'batch-inline');
+    assert.match(result.recommendation.reasons.join('\n'), /within.*threshold/i);
+  });
+
+  it('recommends SDD for independent parallel work', () => {
+    const result = recommendExecutionModes({
+      workflow: 'full',
+      taskCount: 2,
+      inlineThreshold: 3,
+      waves: [{ id: 'foundation', strategy: 'parallel', tasks: ['1.1', '1.2'], depends_on: [] }],
+    });
+
+    assert.equal(result.recommendation.mode, 'sdd');
+    assert.match(result.recommendation.reasons.join('\n'), /parallel/i);
+  });
+
+  it('limits tweak recommendations to direct inline execution', () => {
+    const result = recommendExecutionModes({ workflow: 'tweak', taskCount: 2, inlineThreshold: 3, waves: [] });
+
+    assert.deepEqual(result.available_modes, ['inline']);
+    assert.equal(result.recommendation.mode, 'inline');
+  });
+
   it('creates a current SDD plan with an auditable parallel wave', () => {
     const plan = createPlan(changeDir, {
       mode: 'sdd',
@@ -66,16 +128,74 @@ describe('execution plan data contract', () => {
     assert.equal(readState(changeDir).execution_plan_hash, plan.hash);
   });
 
-  it('rejects batch-inline without an explicit user override', () => {
-    assert.throws(() => createPlan(changeDir, {
-      mode: 'batch-inline', source: 'default', rationale: 'fast', waves: [],
-    }), /explicit user override/);
+  it('preserves a user-confirmed non-recommended selection in the plan hash', () => {
+    const plan = createPlan(changeDir, {
+      mode: 'inline',
+      source: 'user-confirmed',
+      rationale: 'operator accepts the serial execution risk',
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1', '1.2'], depends_on: [] }],
+      recommendation: {
+        available_modes: ['inline', 'batch-inline', 'sdd'],
+        recommendation: { mode: 'batch-inline', reasons: ['Two tasks are within the threshold.'] },
+        facts: { workflow: 'full' },
+      },
+      selection: {
+        confirmed: true,
+        followed_recommendation: false,
+        acknowledged_non_recommendation: true,
+      },
+    });
+
+    assert.equal(plan.selection.acknowledged_non_recommendation, true);
+    assert.equal(plan.recommendation.recommendation.mode, 'batch-inline');
   });
 
-  it('rejects an inline plan without an explicit user override', () => {
-    assert.throws(() => createPlan(changeDir, {
-      mode: 'inline', source: 'automatic', rationale: 'fast', waves: [],
-    }), /explicit user override/);
+  it('invalidates a legacy full plan without recommendation and confirmation evidence', () => {
+    const plan = createRawPlan(changeDir, {
+      mode: 'sdd',
+      source: 'legacy',
+      rationale: 'legacy execution plan',
+      waves: [{ id: 'wave-1', strategy: 'parallel', tasks: ['1.1', '1.2'], depends_on: [] }],
+    });
+    writePlan(changeDir, plan);
+
+    const result = validatePlan(changeDir, readPlan(changeDir));
+
+    assert.equal(result.valid, false);
+    assert.match(result.failures.join('\n'), /recommendation.*required|selection.*required/i);
+  });
+
+  it('invalidates a revision whose recommendation skips the immediately prior plan', () => {
+    const first = createPlan(changeDir, {
+      mode: 'sdd',
+      source: 'user-confirmed',
+      rationale: 'initial execution plan',
+      waves: [{ id: 'wave-1', strategy: 'parallel', tasks: ['1.1', '1.2'], depends_on: [] }],
+    });
+    writePlan(changeDir, first);
+    writeFileSync(join(changeDir, '.spec-superflow.yaml'), readFileSync(join(changeDir, '.spec-superflow.yaml'), 'utf8')
+      .replace(/^revision:.*$/m, 'revision: 4'));
+    const receipt = createRecommendationReceipt(changeDir, first.waves);
+    const revised = createRawPlan(changeDir, {
+      mode: 'sdd',
+      source: 'user-confirmed-revision',
+      rationale: 'skips an execution plan revision',
+      waves: first.waves,
+      revision: 4,
+      recommendation: receipt.recommendation,
+      recommendationReceipt: receipt,
+      selection: {
+        confirmed: true,
+        followed_recommendation: true,
+        acknowledged_non_recommendation: false,
+      },
+    });
+    writePlan(changeDir, revised);
+
+    const result = validatePlan(changeDir, readPlan(changeDir));
+
+    assert.equal(result.valid, false);
+    assert.match(result.failures.join('\n'), /recommendation receipt.*prior|recommendation.*revision/i);
   });
 
   it('rejects parallel waves with self and unknown dependencies', () => {
