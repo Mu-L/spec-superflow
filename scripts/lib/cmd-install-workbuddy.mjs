@@ -136,7 +136,7 @@ function phaseGuardContent() {
 - DP-1：需求确认
 - DP-2：工件审查
 - DP-3：是否批准 execution contract？
-- DP-4：full/hotfix 默认 SDD；Inline / Batch Inline 只允许用户明确 override
+- DP-4：先运行 ssf execution recommend，展示可用模式与推荐；用户用 --confirm 确认，非推荐选择额外使用 --acknowledge-recommendation
 - DP-5：调试升级
 - DP-6：验证失败
 - DP-7：是否收口归档？

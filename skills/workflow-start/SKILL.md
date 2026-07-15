@@ -58,7 +58,7 @@ Guard: `node "${CLAUDE_PLUGIN_ROOT}/scripts/guard/guard.mjs" check <dir> explori
 Guard: `... check <dir> specifying bridging --json` → fail = BLOCK. Artifacts exist, implementation requested, contract missing/stale. Include `DP-3: 契约批准`.
 
 ### Route to build-executor
-Contract exists and approved, contract matches artifacts. Include `DP-4: 执行模式选择`. Before the first implementation edit, `build-executor` must run `ssf execution plan <change-dir> ...`, then `ssf execution show <change-dir> --json`; report the saved revision, selected mode, ordered waves, and actual concurrent-dispatch capability. Do not transition to `executing` until `show` reports `current: true`; then run `... check <dir> approved-for-build executing --json` → fail = BLOCK.
+Contract exists and approved, contract matches artifacts. Include `DP-4: 执行模式选择`: propose waves, run `ssf execution recommend <change-dir> [--wave ...]`, show the user every available mode plus evidence and the recommendation, then obtain a clear selection. The command saves a current receipt; before the first implementation edit, `build-executor` must run `ssf execution plan <change-dir> --mode <selected> --confirm ...` (and `--acknowledge-recommendation` when the selected mode differs from the recommendation) using matching artifacts, contract, and waves, then `ssf execution show <change-dir> --json`; report the saved revision, selected mode, recommendation alignment, ordered waves, and actual concurrent-dispatch capability. A revision must repeat recommend and confirmation. Do not transition to `executing` until `show` reports `current: true`; then run `... check <dir> approved-for-build executing --json` → fail = BLOCK.
 
 ### Route to bug-investigator
 Execution hit blockage: test failure, unexpected behavior, build error, task cannot proceed. After debugging, route back to build-executor.
@@ -94,7 +94,7 @@ or internal-refactor work. Never pass `--force` to `ssf isolate` for prototype
 work.
 
 ### Fast-Path Routing
-- **Hotfix**: Route to contract-builder (minimal), skip need-explorer + spec-writer, guard check `exploring bridging --workflow hotfix`, then `bridging -> approved-for-build`, after DP-3 → build-executor (default SDD plan), after → release-archivist (lightweight). Hotfix may skip `proposal.md`, `design.md`, `tasks.md`, and `specs/`, but it still requires a fresh minimal `execution-contract.md`, DP-3 approval, and a current execution plan before build
+- **Hotfix**: Route to contract-builder (minimal), skip need-explorer + spec-writer, guard check `exploring bridging --workflow hotfix`, then `bridging -> approved-for-build`, after DP-3 → build-executor (recommend, show, and confirm an execution mode), after → release-archivist (lightweight). Hotfix may skip `proposal.md`, `design.md`, `tasks.md`, and `specs/`, but it still requires a fresh minimal `execution-contract.md`, DP-3 approval, and a current execution plan before build
 - **Tweak**: Route to build-executor (direct edit), skip need-explorer + spec-writer + contract-builder, guard check `exploring approved-for-build --workflow tweak`, after → release-archivist (lightweight)
 
 Post-transition: 💡 `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" inject <change-dir>` to update phase-guard artifacts.

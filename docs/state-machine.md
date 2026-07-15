@@ -43,9 +43,14 @@
 
 For full/hotfix, DP-4 is the persisted execution plan created by `ssf execution
 plan` at `<change>/.superpowers/sdd/execution-plan.json`, not an arbitrary
-state value or content stored in `execution-contract.md`. SDD is the default. `inline` and
-`batch-inline` require an explicit user override; Batch Inline remains serial
-and is never an automatic default or a substitute for parallel execution.
+state value or content stored in `execution-contract.md`. Before planning, run
+`ssf execution recommend`; it lists applicable `inline`, `batch-inline`, and
+`sdd` modes with evidence and one recommendation, and persists a receipt at
+`<change>/.superpowers/sdd/execution-recommendation.json`. `plan` and `revise`
+accept only a receipt whose artifacts, contract, and waves still match. The user must record the
+selected mode with `--confirm`; a non-recommended selection also requires
+`--acknowledge-recommendation`. Batch Inline remains serial and is never a
+substitute for parallel execution.
 `tweak` is exempt from execution-plan and review-receipt requirements.
 
 The plan names ordered execution waves, dependencies, and parallel/serial
@@ -53,8 +58,9 @@ strategy. `ssf execution show <change-dir> --json` reports which current waves
 are eligible. Each completed wave must have a current
 `pass` review receipt, recorded with `ssf execution review`, before a dependent
 wave or `closing` can proceed. `ssf execution revise` retains or upgrades an
-existing plan as `sdd`; that new revision invalidates old review receipts and
-does not permit a downgrade. #47 recovery/switch/save
+existing plan as `sdd`; that new revision requires a fresh confirmation (and
+acknowledgement when it differs from the new recommendation), invalidates old
+review receipts, and does not permit a downgrade. #47 recovery/switch/save
 slash commands are not implemented; do not assume `/ssf:*` commands exist.
 
 ### `debugging`

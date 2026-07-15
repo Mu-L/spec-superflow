@@ -60,11 +60,13 @@ Commands:
                         Validate a handoff result
   handoff resolve <change-dir> <id> --decision <accept|reject|defer>
                         Record the explicit handoff decision
-  execution plan <change-dir> --mode <mode> --reason <text> --wave <id>:<strategy>:<task,...> [--override]
-                        Record a guarded execution plan (SDD is the default)
+  execution recommend <change-dir> [--wave <id>:<strategy>:<task,...>]
+                        List execution modes and an evidence-based recommendation
+  execution plan <change-dir> --mode <mode> --confirm --reason <text> --wave <id>:<strategy>:<task,...> [--acknowledge-recommendation]
+                        Record a user-confirmed guarded execution plan
   execution show <change-dir> [--json]
                         Show and validate the current execution plan
-  execution revise <change-dir> --mode sdd --reason <text> --wave <id>:<strategy>:<task,...>
+  execution revise <change-dir> --mode sdd --confirm --reason <text> --wave <id>:<strategy>:<task,...> [--acknowledge-recommendation]
                         Upgrade inline/batch to SDD, or replan existing SDD waves, as a new revision
   execution review <change-dir> --wave <id> --base <sha> --head <sha> --report <path> --verdict pass|fail
                         Record one review receipt for a planned wave

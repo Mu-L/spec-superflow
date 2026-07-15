@@ -246,8 +246,9 @@ describe('guard: hotfix minimal contract', () => {
   it('allows approved-for-build to executing with fresh contract and approved DP-3', () => {
     prepareFreshHotfixState();
     runNodeScript(CLI_PATH, ['state', 'set', dir, 'dp_3_result', 'approved: user confirmed minimal contract']);
-    runNodeScript(CLI_PATH, ['execution', 'plan', dir, '--mode', 'sdd',
-      '--reason', 'hotfix default execution plan', '--wave', 'wave-1:serial:1.1']);
+    runNodeScript(CLI_PATH, ['execution', 'recommend', dir, '--wave', 'wave-1:serial:1.1']);
+    runNodeScript(CLI_PATH, ['execution', 'plan', dir, '--mode', 'sdd', '--confirm', '--acknowledge-recommendation',
+      '--reason', 'hotfix user-selected execution plan', '--wave', 'wave-1:serial:1.1']);
     const result = run('approved-for-build', 'executing');
     assert.equal(result.exitCode, 0, JSON.stringify(result.output));
     const dims = result.output.checks.map(c => c.dimension);
@@ -293,8 +294,11 @@ describe('guard: execution control records', () => {
   }
 
   function createCurrentPlan() {
-    runNodeScript(CLI_PATH, ['execution', 'plan', dir, '--mode', 'sdd',
-      '--reason', 'full workflow default execution plan',
+    runNodeScript(CLI_PATH, ['execution', 'recommend', dir,
+      '--wave', 'wave-1:parallel:1.1,1.2',
+      '--wave', 'wave-2:serial:2.1']);
+    runNodeScript(CLI_PATH, ['execution', 'plan', dir, '--mode', 'sdd', '--confirm',
+      '--reason', 'full workflow user-selected execution plan',
       '--wave', 'wave-1:parallel:1.1,1.2',
       '--wave', 'wave-2:serial:2.1']);
   }

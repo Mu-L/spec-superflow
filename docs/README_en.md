@@ -234,19 +234,30 @@ You: "add authorization to the API"
 
 For full/hotfix, DP-4 is a persisted, current execution plan at
 `<change>/.superpowers/sdd/execution-plan.json`, rather than an arbitrary text
-field or content stored in `execution-contract.md`. SDD is the default.
-`inline` and `batch-inline` require an explicit user override; Batch Inline
-remains serial and is never an automatic default or a claim of parallel work.
+field or content stored in `execution-contract.md`. Run `ssf execution recommend`
+first: it lists `inline`, `batch-inline`, and `sdd` from task count and wave
+strategy, with auditable reasons, and saves a recommendation receipt at
+`<change>/.superpowers/sdd/execution-recommendation.json`. The agent presents that recommendation and the
+user records a choice with `--confirm`; `plan` and `revise` require a receipt matching the current
+artifacts, contract, and waves. A non-recommended choice also requires
+`--acknowledge-recommendation`. Batch Inline remains serial and never claims
+parallel work.
 `tweak` is exempt from this execution-plan and review-receipt gate.
 
 ```bash
-ssf execution plan changes/my-change --mode sdd --reason "independent work" \
+ssf execution recommend changes/my-change \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation --json
+ssf execution plan changes/my-change --mode sdd --confirm --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
 # Retains/upgrades an existing plan as sdd; it can replan waves and dependencies,
 # creates a new revision, and clears old review receipts. Downgrades are rejected.
-ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
+ssf execution recommend changes/my-change \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation --json
+ssf execution revise changes/my-change --mode sdd --confirm --reason "need parallel work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution review changes/my-change --wave foundation --base <sha> --head <sha> \
@@ -330,12 +341,14 @@ Content-level detection, not timestamps: proposal scope changed, approved spec b
 <details>
 <summary><strong>How does SDD (Subagent-Driven Development) work?</strong></summary>
 
-For full/hotfix, the default SDD loop persists an execution plan at
-`<change>/.superpowers/sdd/execution-plan.json` with named waves, dependencies,
-and strategies before dispatching implementers. Each wave gets a review report
-and a `pass`/`fail` review receipt. Inline and Batch Inline require an explicit
-user override; Batch Inline remains serial. The progress ledger prevents
-session-compression loss.
+For full/hotfix, `ssf execution recommend` first presents Inline, Batch Inline,
+and SDD with evidence from the change, then recommends one. The user confirms a
+selection with `--confirm`; a different selection requires
+`--acknowledge-recommendation`. The saved execution plan at
+`<change>/.superpowers/sdd/execution-plan.json` names waves, dependencies, and
+strategies before dispatching implementers. Each wave gets a review report and a
+`pass`/`fail` receipt. Batch Inline remains serial, and the progress ledger
+prevents session-compression loss.
 
 </details>
 

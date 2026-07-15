@@ -45,30 +45,35 @@ Return to `specifying` or `bridging` if: new behavior appears, interfaces change
 
 ## Execution Mode Selection
 
-For `full`/`hotfix`, **SDD is the default execution mode**. Generate a machine-backed plan before deciding who edits code:
+For `full`/`hotfix`, generate proposed waves from the approved contract, then use the recommendation as a decision aid rather than silently defaulting a mode:
 
 ```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution recommend <change-dir> \
+  --wave <wave-id>:<parallel|serial>:<task,...>[:<depends-on,...>] --json
+# Show every available mode, the observed facts, and the recommendation to the user.
+# The command writes a receipt tied to the artifacts, contract, and waves. After the user chooses, record that explicit confirmation:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution plan <change-dir> \
-  --mode sdd --reason "full/hotfix default SDD" \
+  --mode <selected-mode> --confirm --reason "user-selected execution mode" \
   --wave <wave-id>:<parallel|serial>:<task,...>[:<depends-on,...>]
+# Add --acknowledge-recommendation when the selection differs from the recommendation.
 node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution show <change-dir> --json
 ```
 
 The optional fourth `--wave` segment names prerequisite wave IDs. `execution show --json` reports `current`, plus each wave's `depends_on`, `receipt`, `blockers`, `retryable`, and `eligible` status. A wave with `retryable: true` has a current `fail` receipt and is eligible only for its focused repair and re-review; its dependents remain blocked until its replacement `pass` receipt. Report the saved plan revision, selected mode, ordered waves, dependencies, and whether every `parallel` wave can actually be dispatched concurrently on the current platform. If concurrency is unavailable, state the capability and reason plainly; retain the planned `parallel` strategy and do not silently execute it as a serial or Batch Inline plan.
 
-`inline` and `batch-inline` are available only through an **explicit user override**. Record that request with `--override`; task count, module locality, estimated effort, or `execution.inlineThreshold` never auto-selects either mode.
+The recommendation uses task count, configured `execution.inlineThreshold`, and declared wave strategy. It never auto-selects: present every available mode and the recommendation to the user. `--confirm` records any user-selected mode; a choice that differs from the recommendation requires `--acknowledge-recommendation` so the plan captures an informed risk decision.
 
 | Mode | Criteria |
 |------|----------|
-| **SDD** (default for full/hotfix) | Generated unless the user explicitly overrides it |
-| **Inline** | Explicit user override for a small, sequential task set |
-| **Batch Inline** | Explicit user override for a bounded batch; it remains serial and is never presented as parallel |
+| **SDD** | Recommended for parallel waves, multiple waves, or work beyond the inline threshold |
+| **Inline** | Recommended for a single sequential task; always available for a user-confirmed choice |
+| **Batch Inline** | Recommended for a bounded sequential batch; it remains serial and is never presented as parallel |
 
-Do not transition to `executing` until `execution show` reports `current: true` and the phase guard passes. A revised plan must use `ssf execution revise`; it creates a new revision and invalidates receipts from the prior revision.
+Do not transition to `executing` until `execution show` reports `current: true` and the phase guard passes. A revised plan must repeat `execution recommend` and use `ssf execution revise --confirm`; it creates a new revision and invalidates receipts from the prior revision.
 
 ## Batch Inline Execution
 
-Only when the user explicitly selects `batch-inline`. Current agent executes directly and serially. TDD Iron Law still applies.
+Only when the user explicitly confirms `batch-inline` after seeing the recommendation. Current agent executes directly and serially. TDD Iron Law still applies.
 
 Procedure: announce mode → write failing test → confirm failure → implement → run suite → refactor → lightweight checkpoint (files exist, no placeholders, test passed, no unintended changes) → report.
 
@@ -118,7 +123,7 @@ Track in `.superpowers/sdd/progress.md`. Check for existing ledger — completed
 
 ## Inline Execution Mode
 
-Only after an explicit user override recorded by `ssf execution plan --override`. Executes in the current session and still writes one review receipt per planned wave.
+Only after a user-confirmed `inline` selection is recorded by `ssf execution plan --confirm`; a non-recommended selection also records `--acknowledge-recommendation`. Executes in the current session and still writes one review receipt per planned wave.
 
 Per-task: extract brief → write failing test → confirm failure → implement → confirm green → checkpoint review (done-when criteria, SHALL/MUST verification) → commit → save a task-level recovery checkpoint when another task remains → append to progress ledger.
 

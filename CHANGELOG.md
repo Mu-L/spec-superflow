@@ -6,9 +6,9 @@ The format loosely follows Keep a Changelog.
 
 ## [Unreleased]
 
-### Fixed
+### Changed
 
-- **#45 — Guarded execution control plane**: full/hotfix now default to SDD through a persisted execution plan at `<change>/.superpowers/sdd/execution-plan.json`; inline and Batch Inline require an explicit override, named waves record dependencies and strategy, and closing requires current `pass` review receipts for every wave.
+- **#45 — Execution-mode recommendation**: DP-4 now runs `ssf execution recommend` to list Inline, Batch Inline, and SDD from task and wave evidence, with a recommendation. Every persisted plan at `<change>/.superpowers/sdd/execution-plan.json` requires explicit `--confirm`; a non-recommended selection records `--acknowledge-recommendation` instead of treating Inline as an override. Named waves, dependencies, and review receipts remain mandatory.
 
 ## [0.9.0] - 2026-07-11
 

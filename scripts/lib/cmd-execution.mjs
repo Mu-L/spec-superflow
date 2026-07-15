@@ -1,8 +1,13 @@
 import { parseArgs } from 'node:util';
 import { createPlan, describeWaves, EXECUTION_MODES, readPlan, recordReview, validatePlan, writePlan } from './execution-plan.mjs';
+import {
+  createRecommendationReceipt,
+  readCurrentRecommendationReceipt,
+  writeRecommendationReceipt,
+} from './execution-recommendation.mjs';
 import { readState, writeState } from './state-loader.mjs';
 
-const SUBCOMMANDS = ['plan', 'show', 'revise', 'review'];
+const SUBCOMMANDS = ['recommend', 'plan', 'show', 'revise', 'review'];
 
 export async function run(args) {
   const { positionals, values } = parseArgs({
@@ -11,7 +16,8 @@ export async function run(args) {
       mode: { type: 'string' },
       reason: { type: 'string' },
       wave: { type: 'string', multiple: true },
-      override: { type: 'boolean', default: false },
+      confirm: { type: 'boolean', default: false },
+      'acknowledge-recommendation': { type: 'boolean', default: false },
       base: { type: 'string' },
       head: { type: 'string' },
       report: { type: 'string' },
@@ -32,6 +38,8 @@ export async function run(args) {
   if (!changeDir) usage('Usage: ssf execution <subcommand> <change-dir> [options]');
 
   switch (subcommand) {
+    case 'recommend':
+      return recommendAndPrint(changeDir, values);
     case 'plan':
       return createAndPrintPlan(changeDir, values, false);
     case 'show':
@@ -57,24 +65,53 @@ function createAndPrintPlan(changeDir, values, revise) {
   } else if (existing) {
     throw new Error('An execution plan already exists; use "ssf execution revise" to create a new SDD revision');
   }
-
-  if (values.override && values.mode === 'sdd') {
-    throw new Error('--override is only valid for inline or batch-inline execution');
+  const recommendationReceipt = readCurrentRecommendationReceipt(changeDir, waves, revise ? existing.revision : null);
+  const recommendation = recommendationReceipt.recommendation;
+  if (!recommendation.available_modes.includes(values.mode)) {
+    throw new Error(`${values.mode} is not an available execution mode for this change; choose one of: ${recommendation.available_modes.join(', ')}`);
   }
-  if (!values.override && values.mode !== 'sdd') {
-    throw new Error(`${values.mode} requires --override to record an explicit user override`);
+
+  if (!values.confirm) {
+    throw new Error('Execution mode selection requires --confirm after reviewing "ssf execution recommend" output');
+  }
+  const followedRecommendation = values.mode === recommendation.recommendation.mode;
+  if (!followedRecommendation && !values['acknowledge-recommendation']) {
+    throw new Error(`${values.mode} differs from the ${recommendation.recommendation.mode} recommendation; pass --acknowledge-recommendation to record the informed choice`);
+  }
+  if (followedRecommendation && values['acknowledge-recommendation']) {
+    throw new Error('--acknowledge-recommendation is only valid when selecting a non-recommended mode');
   }
 
   const plan = createPlan(changeDir, {
     mode: values.mode,
-    source: values.override ? 'user-override' : 'default',
+    source: revise ? 'user-confirmed-revision' : 'user-confirmed',
     rationale: values.reason,
     waves,
+    recommendation,
+    recommendationReceipt,
+    selection: {
+      confirmed: true,
+      followed_recommendation: followedRecommendation,
+      acknowledged_non_recommendation: !followedRecommendation,
+    },
     revision: revise ? existing.revision + 1 : undefined,
   });
   const saved = writePlan(changeDir, plan);
   writeExecutionSummary(changeDir, saved);
   print(values.json, { ok: true, plan: saved }, `Execution plan revision ${saved.revision} recorded (${saved.mode}).`);
+}
+
+function recommendAndPrint(changeDir, values) {
+  const waves = values.wave?.length ? parseWaves(values.wave) : [];
+  const receipt = writeRecommendationReceipt(changeDir, createRecommendationReceipt(changeDir, waves));
+  const recommendation = receipt.recommendation;
+  const lines = [
+    'Available execution modes:',
+    ...recommendation.available_modes.map(mode => `- ${mode}`),
+    `Recommended: ${recommendation.recommendation.mode}`,
+    ...recommendation.recommendation.reasons.map(reason => `- ${reason}`),
+  ];
+  print(values.json, { ok: true, recommendation, receipt }, lines.join('\n'));
 }
 
 function showPlan(changeDir, json) {
@@ -161,8 +198,9 @@ function print(json, value, message) {
 
 function printHelp() {
   console.log(`Usage:
-  ssf execution plan <dir> --mode <mode> --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>] [--override]
+  ssf execution recommend <dir> [--wave <id>:<strategy>:<task,...>[:<depends-on,...>]] [--json]
+  ssf execution plan <dir> --mode <mode> --confirm --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>] [--acknowledge-recommendation]
   ssf execution show <dir> [--json]
-  ssf execution revise <dir> --mode sdd --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>]
+  ssf execution revise <dir> --mode sdd --confirm --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>] [--acknowledge-recommendation]
   ssf execution review <dir> --wave <id> --base <sha> --head <sha> --report <path> --verdict pass|fail`);
 }

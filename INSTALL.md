@@ -688,17 +688,27 @@ changes/<change-name>/
 
 full/hotfix 在 DP-4 必须保存 current execution plan 到
 `<change>/.superpowers/sdd/execution-plan.json`；它不属于 `execution-contract.md`。
-SDD 是 default。只有用户明确选择 explicit override，才可改为 `inline` 或
-`batch-inline`；Batch Inline 始终串行，不会自动成为默认模式或表示并行。`tweak`
+先运行 `ssf execution recommend`：它按任务量和 wave 策略列出 `inline`、
+`batch-inline`、`sdd` 并给出推荐，并保存当前 wave 的推荐凭据到
+`<change>/.superpowers/sdd/execution-recommendation.json`。Agent 展示候选项和理由后，
+`plan` 与 `revise` 必须消费匹配当前 artifact、contract 和 wave 的凭据；用户用 `--confirm`
+确认；若选择非推荐方式，必须用 `--acknowledge-recommendation` 记录风险确认。Batch
+Inline 始终串行，不会表示并行。`tweak`
 免除 execution plan 与 review receipt gate。
 
 ```bash
-ssf execution plan changes/my-change --mode sdd --reason "independent work" \
+ssf execution recommend changes/my-change \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation --json
+ssf execution plan changes/my-change --mode sdd --confirm --reason "independent work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution show changes/my-change --json
 # 可将已有 inline/batch-inline 计划升级为 sdd，或重规划已有 sdd 的 wave/依赖；不能降级。
-ssf execution revise changes/my-change --mode sdd --reason "need parallel work" \
+ssf execution recommend changes/my-change \
+  --wave foundation:parallel:1.1,1.2 \
+  --wave integration:serial:2.1:foundation --json
+ssf execution revise changes/my-change --mode sdd --confirm --reason "need parallel work" \
   --wave foundation:parallel:1.1,1.2 \
   --wave integration:serial:2.1:foundation
 ssf execution review changes/my-change --wave foundation --base <sha> --head <sha> \
