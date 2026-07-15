@@ -37,8 +37,8 @@ Restate what you heard: "Here's what I'm hearing: [problem, scope, non-goals, su
 
 After user confirms the summary:
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_1_result "confirmed: <one-line summary>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_1_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+npx --yes --package spec-superflow@0.9.0 ssf state set <change-dir> dp_1_result "confirmed: <one-line summary>"
+npx --yes --package spec-superflow@0.9.0 ssf state set <change-dir> dp_1_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 DP-1 confirms scope, non-goals, and success criteria before artifact creation.
 

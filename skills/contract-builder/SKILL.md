@@ -5,9 +5,9 @@ description: Convert approved planning artifacts into an execution contract. Inv
 
 # Contract Builder
 
-Converts planning artifacts into a single execution handshake: `execution-contract.md`. Use `${CLAUDE_PLUGIN_ROOT}/templates/execution-contract.md` as the baseline structure.
+Converts planning artifacts into a single execution handshake: `execution-contract.md`. Load the baseline with `npx --yes --package spec-superflow@0.9.0 ssf runtime asset read templates/execution-contract.md`.
 
-Read before generating: `proposal.md`, `specs/`, `design.md`, `tasks.md`, `docs/artifact-contract.md`.
+Read before generating: `proposal.md`, `specs/`, `design.md`, `tasks.md`, then load `docs/artifact-contract.md` with `npx --yes --package spec-superflow@0.9.0 ssf runtime asset read docs/artifact-contract.md`.
 
 ## Artifact Mapping
 
@@ -35,8 +35,8 @@ Must make obvious: approved behavior, out-of-scope, constraints, batches, test o
 
 After drafting: summarize handoff rules, identify ambiguity, flag unmapped requirements, ask user to approve explicitly. After approval:
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_3_result "approved: <summary>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_3_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+npx --yes --package spec-superflow@0.9.0 ssf state set <change-dir> dp_3_result "approved: <summary>"
+npx --yes --package spec-superflow@0.9.0 ssf state set <change-dir> dp_3_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 DP-3 is a hard gate — no implementation without this record.
 
@@ -57,9 +57,9 @@ Generate minimal contract: Intent Lock (one sentence), Task List (numbered), App
 
 ## Post-Generation
 
-Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state init <change-dir>` to create `.spec-superflow.yaml` with hashes.
+Run `npx --yes --package spec-superflow@0.9.0 ssf state init <change-dir>` to create `.spec-superflow.yaml` with hashes.
 
-For hotfix, after writing the minimal contract, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state init <change-dir>` or `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state rebuild <change-dir>` so `contract_hash` is recorded. DP-3 remains mandatory before build.
+For hotfix, after writing the minimal contract, run `npx --yes --package spec-superflow@0.9.0 ssf state init <change-dir>` or `npx --yes --package spec-superflow@0.9.0 ssf state rebuild <change-dir>` so `contract_hash` is recorded. DP-3 remains mandatory before build.
 
 ## Exception Handling
 
