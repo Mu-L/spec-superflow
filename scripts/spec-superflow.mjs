@@ -29,6 +29,7 @@ const COMMANDS = {
   'install-roocode':  () => import('./lib/cmd-install-roocode.mjs'),
   'install-continue': () => import('./lib/cmd-install-continue.mjs'),
   'install-pi':       () => import('./lib/cmd-install-pi.mjs'),
+  'install-qoder':    () => import('./lib/cmd-install-qoder.mjs'),
   'install-zcode':     () => import('./lib/cmd-install-zcode.mjs'),
 };
 
@@ -87,6 +88,7 @@ Commands:
   install-roocode       Deploy to .roo/ + .roo/rules/ (Roo Code)
   install-continue      Deploy to .continue/ + .continue/rules/ (Continue)
   install-pi            Deploy to .pi/skills/ (Pi agent; no rules dir)
+  install-qoder         Deploy to .qoder/ + .qoder/rules/ (Qoder)
 
 Options:
   --help, -h            Show this help message

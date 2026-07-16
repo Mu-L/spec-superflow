@@ -7,7 +7,7 @@
 - [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) — 规划引擎（Schema 验证、Delta Spec、工件解析）
 - [obra/superpowers](https://github.com/obra/superpowers) — 执行纪律（TDD 铁律、SDD、系统化调试、代码审查）
 
-当前发布版本：**v0.9.1**。
+当前发布版本：**v0.10.0**。
 
 ---
 
@@ -429,7 +429,44 @@ rm -rf ~/.trae/skills/
 
 ---
 
-## Qoder / Trae CN / 其他本地技能客户端
+## Qoder
+
+Qoder 读取 `.qoder/rules/*.md` 作为常驻上下文。安装脚本部署 skills 到 `.qoder/skills/`、运行时依赖到 `.qoder/spec-superflow/`、phase-guard 规则到 `.qoder/rules/phase-guard.md`（Qoder 自动加载，无需手动引用）。
+
+### 安装
+
+```bash
+npx spec-superflow@latest install-qoder
+```
+
+或从本地仓库（开发 / 离线）：
+
+```bash
+node scripts/install-qoder.mjs --local /path/to/spec-superflow
+```
+
+### 升级
+
+```bash
+npx spec-superflow@latest install-qoder
+```
+
+### 卸载
+
+```bash
+rm -rf .qoder/skills .qoder/spec-superflow .qoder/rules/phase-guard.md
+```
+
+### 验证
+
+```bash
+ls .qoder/skills          # 应有 9 个 skill 目录
+cat .qoder/rules/phase-guard.md
+```
+
+---
+
+## Trae CN / 其他本地技能客户端
 
 任何支持本地 `skills/` 目录的客户端，都可以用同样方式接入：
 

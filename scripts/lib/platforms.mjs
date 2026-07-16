@@ -116,6 +116,16 @@ export const NEW_PLATFORMS = [
     supportsHooks: false,
     notes: 'Pi agent reads skills from .pi/ (global: .pi/agent/). No rules dir; invoke "/workflow-start" manually.',
   },
+  {
+    id: 'qoder',
+    name: 'Qoder',
+    skillsDir: '.qoder',
+    globalSkillsDir: '.qoder',
+    rulesDir: 'rules',
+    rulesFormat: 'md',
+    supportsHooks: false,
+    notes: 'Qoder reads .qoder/rules/*.md as rules.',
+  },
 ];
 
 /** Lookup a new platform config by id. */

@@ -6,6 +6,12 @@ The format loosely follows Keep a Changelog.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-16
+
+### Added
+
+- **#60 — Qoder 平台支持**：新增 `ssf install-qoder` 一键安装命令，部署 skills 到 `.qoder/skills/`、运行时依赖到 `.qoder/spec-superflow/`、phase-guard 规则到 `.qoder/rules/phase-guard.md`。采用共享库安装器模式（Pattern A），与 Cline/Kiro/Windsurf 等平台一致。平台支持数从 17 增至 18。
+
 ## [0.9.1] - 2026-07-15
 
 ### Changed
