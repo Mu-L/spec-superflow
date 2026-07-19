@@ -18,6 +18,8 @@ const COMMANDS = {
   handoff:        () => import('./lib/cmd-handoff.mjs'),
   isolate:        () => import('./lib/cmd-isolate.mjs'),
   execution:      () => import('./lib/cmd-execution.mjs'),
+  resume:         () => import('./lib/cmd-resume.mjs'),
+  switch:         () => import('./lib/cmd-switch.mjs'),
   runtime:        () => import('./lib/cmd-runtime.mjs'),
   'install-cursor': () => import('./lib/cmd-install-cursor.mjs'),
   'install-workbuddy': () => import('./lib/cmd-install-workbuddy.mjs'),
@@ -72,6 +74,10 @@ Commands:
                         Upgrade inline/batch to SDD, or replan existing SDD waves, as a new revision
   execution review <change-dir> --wave <id> --base <sha> --head <sha> --report <path> --verdict pass|fail
                         Record one review receipt for a planned wave
+  resume [change-dir] [--json]
+                        Recover the only active change or an explicit change context
+  switch <change-dir> [--json]
+                        Recover an explicit change context without changing the shell
   runtime check-update  Run a portable update check for canonical skills
   runtime infer <dir>   Infer workflow mode without a plugin-root path
   runtime guard ...     Run a portable phase-transition guard
@@ -110,6 +116,8 @@ Examples:
   ssf checkpoint save changes/my-change/ --task 1.1 --next "Run focused tests"
   ssf checkpoint list changes/my-change/
   ssf handoff create changes/my-change/ --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
+  ssf resume changes/my-change --json
+  ssf switch changes/another-change
   ssf install-cursor
   ssf install-workbuddy
   ssf install-cline --local /path/to/spec-superflow
