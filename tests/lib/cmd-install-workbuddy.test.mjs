@@ -215,6 +215,25 @@ describe('cmd-install-workbuddy', () => {
     assert.match(stdout, /commands\/.*\(3 entries, 3 commands\)/);
   });
 
+  it('installs only the immutable command snapshot when source changes after planning', async () => {
+    const pluginRoot = makePluginRoot();
+    const homeDir = join(tempDir, 'snapshot-home');
+    const plan = planInstall({ pluginRoot, homeDir, marketplaceName: 'test' });
+    assert.equal(plan.commandAssets.length, 3);
+    assert.deepEqual(
+      plan.commandAssets.map(asset => asset.relativePath),
+      ['ssf/resume.md', 'ssf/save.md', 'ssf/switch.md'],
+    );
+
+    writeFileSync(join(pluginRoot, 'commands', 'ssf', 'resume.md'), '# changed after planning\n');
+    writeFileSync(join(pluginRoot, 'commands', 'ssf', 'late-addition.md'), '# should not install\n');
+
+    const result = await installWorkBuddy({ pluginRoot, homeDir, marketplaceName: 'test', plan });
+    assert.equal(result, plan);
+    assert.equal(readFileSync(join(plan.targetCommands, 'ssf', 'resume.md'), 'utf-8'), '# resume\n');
+    assert.equal(existsSync(join(plan.targetCommands, 'ssf', 'late-addition.md')), false);
+  });
+
   it('rebuilds the plugin directory so stale commands are removed', async () => {
     const pluginRoot = makePluginRoot();
     const homeDir = join(tempDir, 'home');

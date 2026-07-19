@@ -119,6 +119,25 @@ function listCommandNames(commandsDir) {
   return [...CANONICAL_COMMAND_NAMES];
 }
 
+function snapshotCommandAssets(commandsDir) {
+  listCommandNames(commandsDir);
+  const ssfCommandsDir = join(commandsDir, 'ssf');
+  return Object.freeze(CANONICAL_COMMAND_FILES.map(file => {
+    const filePath = join(ssfCommandsDir, file);
+    const fileStat = lstatSync(filePath);
+    if (fileStat.isSymbolicLink()) {
+      throw new Error(`symbolic links are not allowed in command source: ${filePath}`);
+    }
+    if (!fileStat.isFile()) {
+      throw canonicalCommandTreeError(filePath);
+    }
+    return Object.freeze({
+      relativePath: `ssf/${file}`,
+      content: readFileSync(filePath, 'utf-8'),
+    });
+  }));
+}
+
 function assertCanonicalCommands(commandNames) {
   if (
     commandNames.length !== CANONICAL_COMMAND_NAMES.length
@@ -128,6 +147,15 @@ function assertCanonicalCommands(commandNames) {
       `canonical recovery command set is required: ${CANONICAL_COMMAND_NAMES.join(', ')}; found: ${commandNames.join(', ') || '(none)'}`,
     );
   }
+}
+
+async function copyValidatedCommands(commandAssets, targetCommands) {
+  for (const asset of commandAssets) {
+    const targetPath = join(targetCommands, ...asset.relativePath.split('/'));
+    ensureDir(dirname(targetPath));
+    await writeFile(targetPath, asset.content, 'utf-8');
+  }
+  return commandAssets.length;
 }
 
 /** Recursively copy a directory. */
@@ -279,7 +307,8 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
   const skillsDir = join(root, 'skills');
   const skillNames = listSkillNames(skillsDir);
   const commandsDir = join(root, 'commands');
-  const commandNames = listCommandNames(commandsDir);
+  const commandAssets = snapshotCommandAssets(commandsDir);
+  const commandNames = commandAssets.map(asset => asset.relativePath.replace(/\.md$/, '').replace('/', ':'));
   assertCanonicalCommands(commandNames);
   const workbuddyRoot = join(homeDir, '.workbuddy');
   const pluginsDir = join(workbuddyRoot, 'plugins', 'marketplaces', marketplaceName, 'plugins');
@@ -299,6 +328,7 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
     skillNames,
     commandsDir,
     commandNames,
+    commandAssets,
     workbuddyRoot,
     pluginsDir,
     targetPluginDir,
@@ -316,13 +346,9 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
 
 // ─── install ──────────────────────────────────────────────
 
-async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
-  const plan = planInstall({ pluginRoot, homeDir, marketplaceName });
-  const { skillNames, commandNames, targetPluginDir, targetSkills, targetCommands, targetRules, manifestDir, settingsPath, enabledPluginKey, version, pluginRootAbs } = plan;
-
-  // Revalidate before clearing the prior installation, then copy only the
-  // validated canonical command subtree.
-  listCommandNames(plan.commandsDir);
+async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName, plan } = {}) {
+  const installPlan = plan || planInstall({ pluginRoot, homeDir, marketplaceName });
+  const { skillNames, commandNames, commandAssets, targetPluginDir, targetSkills, targetCommands, targetRules, manifestDir, settingsPath, enabledPluginKey, version, pluginRootAbs } = installPlan;
 
   // 0. Clean old plugin dir.
   if (existsSync(targetPluginDir)) {
@@ -333,7 +359,7 @@ async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
   // 1. Copy runtime dependencies (scripts/docs/templates/dist/hooks).
   console.log('📋 Copying runtime dependencies...');
   for (const dir of RUNTIME_DIRS) {
-    const src = join(plan.pluginRoot, dir);
+    const src = join(installPlan.pluginRoot, dir);
     const dst = join(targetPluginDir, dir);
     if (existsSync(src)) {
       const count = await copyDir(src, dst);
@@ -344,15 +370,11 @@ async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
   }
 
   // 2. Copy canonical recovery commands as complete Markdown assets.
-  const commandCount = await copyDir(
-    join(plan.commandsDir, 'ssf'),
-    join(targetCommands, 'ssf'),
-    { rejectSymlinks: true },
-  );
+  const commandCount = await copyValidatedCommands(commandAssets, targetCommands);
   console.log(`   commands/ → ${targetCommands} (${commandCount} entries, ${commandNames.length} commands)`);
 
   // 3. Copy skills with ${CLAUDE_PLUGIN_ROOT} rewriting.
-  const count = await copySkillsWithRoot(plan.skillsDir, targetSkills, pluginRootAbs);
+  const count = await copySkillsWithRoot(installPlan.skillsDir, targetSkills, pluginRootAbs);
   console.log(`   skills/ → ${targetSkills} (${count} skills, paths rewritten)`);
 
   // 4. Write phase-guard rule.
@@ -366,7 +388,7 @@ async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
   console.log(`   manifest → ${join(manifestDir, 'plugin.json')}`);
 
   // 6. Enable plugin in settings.json.
-  ensureDir(plan.workbuddyRoot);
+  ensureDir(installPlan.workbuddyRoot);
   const settings = readJsonIfExists(settingsPath);
   settings.enabledPlugins = settings.enabledPlugins && typeof settings.enabledPlugins === 'object'
     ? settings.enabledPlugins
@@ -379,7 +401,7 @@ async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   console.log(`   settings → ${enabledPluginKey} enabled`);
 
-  return plan;
+  return installPlan;
 }
 
 // ─── CLI entry ────────────────────────────────────────────
