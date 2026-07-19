@@ -53,7 +53,7 @@ export function saveCheckpoint(changeDir, input) {
   };
   const targetPath = join(paths.checkpoints, `${safeName(input.taskId)}.md`);
   atomicWrite(targetPath, renderRecord(record, `# Checkpoint: ${input.taskId}`, checkpointBody(record)));
-  return readCheckpoint(targetPath);
+  return { ...record, stale: false };
 }
 
 export function listCheckpoints(changeDir) {
