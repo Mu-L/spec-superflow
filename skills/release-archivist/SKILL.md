@@ -104,8 +104,8 @@ Complete every release, delta-spec synchronization, and audit action while the
 state remains `executing`. If delta specs exist, invoke `spec-merger` and
 resolve its outcome before the final `executing → closing` transition. Then
 run `npx --yes --package spec-superflow@0.10.0 ssf state transition <change-dir> closing`.
-`executing → closing` is the final action: once it succeeds, do not route to a
-next skill or run recovery scans.
+`executing → closing` is the final action: once it succeeds, select no next
+skill and run no recovery scans.
 
 ## Lightweight Closure (hotfix/tweak)
 
