@@ -339,6 +339,8 @@ rm -rf your-project/.agents/skills
 
 WorkBuddy 把 Skill 作为 marketplace 插件管理。安装器把 spec-superflow 部署为单个插件，包含 9 个 skill、运行时依赖（scripts/docs/templates/dist/hooks）、phase-guard 规则和 `.codebuddy-plugin/plugin.json` 清单，写入 `~/.workbuddy/plugins/marketplaces/<marketplace>/plugins/spec-superflow/`。
 
+安装器还会分发三份 canonical Markdown command adapter：`/ssf:resume`、`/ssf:switch`、`/ssf:save`。它们仅在 CodeBuddy/WorkBuddy 的 command 机制中提供这些 slash 名称，并调用同一组 CLI guard；不表示所有平台都有完全相同的 slash 命令。
+
 ### 安装（推荐：一键脚本）
 
 ```bash
@@ -362,6 +364,7 @@ ssf install-workbuddy --dry-run
 ```text
 ~/.workbuddy/plugins/marketplaces/cb_teams_marketplace/plugins/spec-superflow/
 ├── .codebuddy-plugin/plugin.json   ← 插件清单（name, version, skills[]）
+├── commands/ssf/                   ← resume、switch、save Markdown command adapter
 ├── skills/                         ← 9 个 skill（${CLAUDE_PLUGIN_ROOT} 已重写）
 ├── rules/phase-guard.md            ← phase-guard 规则（WorkBuddy 自动加载）
 ├── scripts/  docs/  templates/     ← 运行时依赖
@@ -759,8 +762,7 @@ ssf execution review changes/my-change --wave foundation --base <sha> --head <sh
 report 本身必须为普通、非空、非符号链接文件。
 
 每一个 wave 均须有当前 `pass` review receipt，才可启动依赖 wave 或进入 closing；
-修订计划会废止旧 receipt。#47 所提出的恢复、切换与手动保存 slash command 尚未实现，
-不能假定有 `/ssf:*` 命令。
+修订计划会废止旧 receipt。恢复、切换和手动保存属于 control-plane overlay，不增加第九个状态。
 
 Delta spec 的规范路径是 `specs/<capability>/spec.md`。扁平的 `specs/<capability>.md` 和根级 `specs/spec.md` 都不会被当作合法规范静默通过。
 
@@ -776,6 +778,10 @@ ssf inject changes/my-change --platforms all
 ### 会话恢复与可选 prototype
 
 ```bash
+ssf resume                         # 恰好一个活跃 change 时才自动选择
+ssf resume changes/my-change       # 只读恢复指定 change 摘要
+ssf switch changes/another-change  # 只读返回明确 change 的恢复上下文
+ssf save changes/my-change --task 1.1 --next "Run focused tests"
 ssf checkpoint save changes/my-change --task 1.1 --next "Run focused tests"
 ssf checkpoint list changes/my-change
 ssf checkpoint show changes/my-change 1.1
@@ -784,6 +790,8 @@ ssf handoff list changes/my-change
 ssf handoff finish changes/my-change <handoff-id>
 ssf handoff resolve changes/my-change <handoff-id> --decision accept
 ```
+
+`resume` 与 `switch` 是只读恢复操作；`resume` 只会在恰好一个活跃 change 时自动选择。`switch` 只返回明确目标的恢复上下文，不修改 cwd、TUI 会话或任何隐藏指针；CodeBuddy/WorkBuddy adapter 或宿主 Agent 可用该上下文切换当前对话关注对象。`save` 只手动写入兼容 checkpoint，不自动 commit、push 或 sync。`/ssf:resume`、`/ssf:switch`、`/ssf:save` 是 CodeBuddy/WorkBuddy Markdown command adapter，会分发至相同的 CLI guard。
 
 Checkpoint 是任务级恢复上下文。`result-ready` handoff 在继续受影响的工作前必须显式审阅并 resolve。Prototype 只在用户明确确认后创建；后端、CLI、配置和内部重构不会自动进入 prototype 流程。handoff 结果不会自动修改 `design.md` 或 `tasks.md`。
 

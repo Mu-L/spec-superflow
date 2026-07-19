@@ -7,7 +7,7 @@ const root = process.cwd();
 const read = path => readFileSync(join(root, path), 'utf8');
 
 describe('execution control plane instructions', () => {
-  it('documents #45 guarded execution without claiming #47 slash commands', () => {
+  it('documents #45 guarded execution', () => {
     const documents = [
       'README.md',
       'docs/README_en.md',
@@ -29,14 +29,37 @@ describe('execution control plane instructions', () => {
 
     assert.match(read('templates/execution-contract.md'), /Execution Waves/);
     assert.match(read('CHANGELOG.md'), /#45/);
-    assert.doesNotMatch(read('README.md'), /\/ssf:resume/);
-    assert.doesNotMatch(read('docs/README_en.md'), /\/ssf:resume/);
-    assert.doesNotMatch(read('INSTALL.md'), /\/ssf:resume/);
-
     for (const path of documents) {
       assert.doesNotMatch(read(path), /automatic(?:ally)?\s+(?:defaults?\s+to\s+)?Batch Inline/i,
         `${path} does not advertise automatic Batch Inline`);
     }
+  });
+
+  it('documents implemented #47 recovery commands without adding states', () => {
+    for (const path of ['README.md', 'docs/README_en.md', 'INSTALL.md']) {
+      const content = read(path);
+      for (const command of ['/ssf:resume', '/ssf:switch', '/ssf:save']) {
+        assert.match(content, new RegExp(command.replace('/', '\\/')));
+      }
+      assert.match(content, /ssf resume/);
+      assert.match(content, /ssf switch/);
+      assert.match(content, /ssf save/);
+      assert.match(content, /只读|read-only/i, `${path} keeps recovery commands read-only`);
+      assert.match(content, /switch.*(?:只读|read-only).*?(?:恢复上下文|recovery context)/is,
+        `${path} documents switch as a read-only recovery-context operation`);
+      assert.match(content, /save.*(?:checkpoint|检查点).*?(?:不自动 commit、push 或 sync|never commits, pushes, or syncs automatically)/is,
+        `${path} limits save to checkpoint writes without automatic Git or sync effects`);
+      assert.match(content, /CodeBuddy\/WorkBuddy/,
+        `${path} limits slash adapters to CodeBuddy/WorkBuddy`);
+      assert.match(content, /不为其他平台承诺完全相同的 slash 名称|not promised identical slash names|不表示所有平台都有完全相同的 slash 命令/i,
+        `${path} does not promise identical slash names on every platform`);
+    }
+    assert.match(read('docs/state-machine.md'), /control[- ]plane overlay|控制层叠加/i);
+    assert.match(read('docs/state-machine.md'), /ninth\s+workflow\s+state|第九个状态/i);
+    assert.match(read('docs/artifact-contract.md'), /checkpoint.*save|保存.*checkpoint/is);
+    assert.match(read('docs/release-checklist.md'), /commands\/ssf\/resume\.md/);
+    assert.match(read('docs/release-checklist.md'), /complete command assets/i);
+    assert.match(read('CHANGELOG.md'), /#47/);
   });
 
   it('documents only the persisted execution-plan contract that #45 implements', () => {

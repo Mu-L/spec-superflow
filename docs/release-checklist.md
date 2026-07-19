@@ -27,6 +27,7 @@ Use this checklist before publishing a new version of `spec-superflow`.
 - templates reflect the current workflow expectations
 - `docs/artifact-contract.md` matches the templates and skills
 - `docs/state-machine.md` matches the actual workflow routing model
+- Recovery remains a control-plane overlay: resume/switch are read-only, save writes only the compatible checkpoint, and no ninth state is documented.
 - examples still demonstrate the documented workflow
 
 ## Example Quality
@@ -46,7 +47,9 @@ For each example in `docs/examples/`:
 - `node scripts/spec-superflow.mjs version <version> --dry-run` — reports all files in sync
 - `node scripts/check-version-consistency.mjs` — exits 0
 - `node scripts/spec-superflow.mjs --help` — all subcommands listed
-- `node scripts/spec-superflow.mjs install-workbuddy --dry-run` — finds all 9 skills and target paths
+- Verify `commands/ssf/resume.md`, `commands/ssf/switch.md`, and `commands/ssf/save.md` are complete canonical Markdown command assets.
+- `node scripts/spec-superflow.mjs install-workbuddy --dry-run` — finds all 9 skills, all 3 recovery commands, and target paths.
+- Run `install-workbuddy` against a temporary home and verify it installs `ssf:resume`, `ssf:switch`, and `ssf:save` as complete command assets.
 - `npm run test:raw-mode` — packs the current source and runs a canonical runtime in an empty directory with no plugin-root variables or global `ssf`.
 - Run a representative local-installer smoke test.
 - `spec-superflow.config.json` absence still works (backward compatible defaults)
