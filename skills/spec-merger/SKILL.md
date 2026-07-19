@@ -7,16 +7,20 @@ description: Sync delta specs to main specs before closure. Invoke while an exec
 
 Before the final `executing → closing` transition, delta specs (ADDED/MODIFIED/REMOVED/RENAMED) must be merged into the main spec base. **Specs that aren't synced become lies.** A change already in `closing` must not be routed to `spec-merger`.
 
+## Execution-State Guard
+
+Before `ssf sync` or any other write, run
+`npx --yes --package spec-superflow@0.10.0 ssf state get <change-dir> state`.
+Continue only when the persisted state is exactly `executing`. If it is
+`closing` → STOP: "Closing is terminal. Do not route this change to spec-merger;
+synchronization belongs before the final executing → closing transition." For
+any other state, or if the state cannot be read → STOP and route through
+`workflow-start`; do not perform side effects.
+
 ## Pre-Flight Checks
 
 ### Conflict Detection
 Run `npx --yes --package spec-superflow@0.10.0 ssf sync <change-dir>`. If conflicts are detected (same requirement modified by multiple changes), present the conflict list to the user for resolution order.
-
-### Abandoned Change Guard
-Check if the change is `abandoned`. If so → STOP: "Abandoned changes cannot be synced. Delta specs are preserved for reference but must not be merged."
-
-### Closing Change Guard
-Check if the change is `closing`. If so → STOP: "Closing is terminal. Do not route this change to spec-merger; synchronization belongs before the final executing → closing transition."
 
 ## Sync Process
 

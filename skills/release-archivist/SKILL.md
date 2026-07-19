@@ -9,6 +9,15 @@ Finish a spec-superflow change cleanly with verification evidence. This skill
 operates while the change state is `executing`; it is not an active skill after
 the final transition to `closing`.
 
+## Execution-State Guard
+
+Before verification, `ssf audit`, any DP state write, or delta-spec merge, run
+`npx --yes --package spec-superflow@0.10.0 ssf state get <change-dir> state`.
+Continue only when the persisted state is exactly `executing`. If it is
+`closing` → STOP: "Closing is terminal; release, audit, and archival work were
+completed before this transition." For any other state, or if the state cannot
+be read → STOP and route through `workflow-start`; do not perform side effects.
+
 ## The Iron Law: Verification Before Completion
 
 Claiming work is complete without verification is dishonesty, not efficiency. Before claiming any status:

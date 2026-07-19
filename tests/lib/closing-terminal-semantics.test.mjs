@@ -42,6 +42,42 @@ describe('closing terminal lifecycle', () => {
     assert.match(merger, /closing.*must not.*route.*spec-merger/is);
   });
 
+  it('stops pre-closing skills on a persisted non-executing state before side effects', () => {
+    const archivist = read('skills/release-archivist/SKILL.md');
+    const merger = read('skills/spec-merger/SKILL.md');
+    const archivistGuard = section(archivist, '## Execution-State Guard');
+    const mergerGuard = section(merger, '## Execution-State Guard');
+
+    for (const [name, guard] of [
+      ['release-archivist', archivistGuard],
+      ['spec-merger', mergerGuard],
+    ]) {
+      assert.match(guard, /ssf state get <change-dir> state/,
+        `${name} must inspect the persisted state`);
+      assert.match(guard, /exactly.*`executing`/i,
+        `${name} must allow only executing`);
+      assert.match(guard, /closing.*STOP/is,
+        `${name} must stop for the terminal closing state`);
+      assert.match(guard, /any other.*state.*STOP/is,
+        `${name} must stop for every other non-executing state`);
+    }
+
+    assert.ok(merger.indexOf('## Execution-State Guard') < merger.indexOf('ssf sync'),
+      'spec-merger must guard before sync can write main specs');
+    for (const sideEffect of [
+      '### Step 1: Test Suite',
+      'ssf audit',
+      'ssf state set <change-dir> dp_6_result',
+      'ssf state set <change-dir> dp_7_result',
+      'invoke `spec-merger`',
+    ]) {
+      assert.notEqual(archivist.indexOf(sideEffect), -1,
+        `release-archivist fixture must include ${sideEffect}`);
+      assert.ok(archivist.indexOf('## Execution-State Guard') < archivist.indexOf(sideEffect),
+        `release-archivist must guard before ${sideEffect}`);
+    }
+  });
+
   it('defines closing as a successful terminal state with no active archivist', () => {
     const stateMachine = read('docs/state-machine.md');
     const closing = section(stateMachine, '### `closing`');
