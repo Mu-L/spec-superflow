@@ -1,11 +1,11 @@
 ---
 name: spec-merger
-description: Sync delta specs to main specs after closure. Invoke when a change is closing, delta specs need merging into the main spec base, or when detecting spec drift across multiple changes.
+description: Sync delta specs to main specs before closure. Invoke while an executing change has delta specs to merge into the main spec base, or when detecting spec drift across multiple changes.
 ---
 
 # Spec Merger
 
-After a change completes, delta specs (ADDED/MODIFIED/REMOVED/RENAMED) must be merged into the main spec base. **Specs that aren't synced become lies.**
+Before the final `executing → closing` transition, delta specs (ADDED/MODIFIED/REMOVED/RENAMED) must be merged into the main spec base. **Specs that aren't synced become lies.** A change already in `closing` must not be routed to `spec-merger`.
 
 ## Pre-Flight Checks
 
@@ -14,6 +14,9 @@ Run `npx --yes --package spec-superflow@0.10.0 ssf sync <change-dir>`. If confli
 
 ### Abandoned Change Guard
 Check if the change is `abandoned`. If so → STOP: "Abandoned changes cannot be synced. Delta specs are preserved for reference but must not be merged."
+
+### Closing Change Guard
+Check if the change is `closing`. If so → STOP: "Closing is terminal. Do not route this change to spec-merger; synchronization belongs before the final executing → closing transition."
 
 ## Sync Process
 

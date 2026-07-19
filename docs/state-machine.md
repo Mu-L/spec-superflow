@@ -38,6 +38,7 @@
 - TDD, SDD (subagent-driven), review gates, and escalation rules apply
 - `build-executor` is active
 - `code-reviewer` invoked after each execution batch
+- 发布验证、delta-spec 同步与审计都必须在此状态完成；必要时调用 `release-archivist` 和 `spec-merger`，再执行最终状态转换
 
 ## Execution Plan Control Plane
 
@@ -72,11 +73,10 @@ slash commands are not implemented; do not assume `/ssf:*` commands exist.
 
 ### `closing`
 
-- verification is complete with evidence
-- `release-archivist` is active
-- `verification-before-completion` gate enforced
-- `spec-merger` invoked if delta specs need merging into main specs
-- the change can be summarized, archived, or handed off
+- successful terminal state（成功终态）；验证、同步和审计证据已在 `executing` 完成
+- 没有 active skill，next skill 为 `none`
+- 进入后不运行 handoff、checkpoint 或 execution-control 恢复扫描，也不再路由 `release-archivist` 或 `spec-merger`
+- 不允许继续、恢复、交接或发生任何后续状态转换
 
 ### `abandoned`
 
@@ -87,7 +87,7 @@ slash commands are not implemented; do not assume `/ssf:*` commands exist.
 
 ## Terminal States
 
-- `closing` — successful completion with verification
+- `closing` — successful terminal completion；所有收尾动作均在 `executing` 完成后才可进入
 - `abandoned` — change abandoned (no delta spec merge, no further transitions allowed)
 
 ## Recovery Overlays
@@ -100,9 +100,9 @@ eight core states.
   recovery context under `.superpowers/sdd/checkpoints/`.
 - `ssf handoff create <change-dir> --type <type> ...` creates explicit side-work
   contracts under `.superpowers/sdd/handoffs/`.
-- `workflow-start` lists overlays before normal routing. `result-ready` handoffs
-  require explicit review and resolution before affected work resumes; stale
-  checkpoints remain historical evidence only.
+- `workflow-start` 仅对非终态在正常路由前列出 overlays；`closing` 会在
+  overlay recovery 前短路。`result-ready` handoff 在受影响工作恢复前仍需显式
+  审查和 resolve；stale checkpoint 仅保留为历史证据。
 - Prototype work is optional and requires explicit user confirmation. Results
   are reviewed manually and never mutate `design.md` or `tasks.md`.
 
