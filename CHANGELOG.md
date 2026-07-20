@@ -6,6 +6,10 @@ The format loosely follows Keep a Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **Closes #47 — Recovery workflow commands**: publish `ssf resume`, `ssf switch`, and `ssf save` as a control-plane overlay. Resume/switch are read-only; save writes only the compatible checkpoint and never automatically commits, pushes, or syncs. WorkBuddy distributes the canonical `/ssf:resume`, `/ssf:switch`, and `/ssf:save` Markdown command adapters.
+
 ### Fixed
 
 - **#64 — closing 终态生命周期对齐**：将 `release-archivist` 验证、`spec-merger` 同步和归档确认明确为 `executing` 内的 pre-closing 收尾步骤；`closing` 是 `CLOSED` 成功终态，且没有 next skill。

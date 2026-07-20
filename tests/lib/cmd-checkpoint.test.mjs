@@ -75,6 +75,13 @@ describe('ssf checkpoint', () => {
     const result = runSsf(['checkpoint', 'save', changeDir, '--task', '1.1']);
     assert.equal(result.exitCode, 2);
     assert.equal(existsSync(join(changeDir, '.superpowers', 'sdd', 'checkpoints', '1.1.md')), false);
+    assert.equal(existsSync(join(changeDir, '.superpowers')), false);
+  });
+
+  it('rejects an unknown save task before creating the checkpoint directory', () => {
+    const result = runSsf(['checkpoint', 'save', changeDir, '--task', '9.9', '--next', 'Continue']);
+    assert.equal(result.exitCode, 1);
+    assert.equal(existsSync(join(changeDir, '.superpowers')), false);
   });
 
   it('lists a stale checkpoint as JSON', () => {

@@ -117,6 +117,9 @@ npm install -g spec-superflow
 | `ssf checkpoint save <dir> --task <id> --next <text>` | Save a task-level recovery checkpoint |
 | `ssf checkpoint list <dir>` | List checkpoints and stale status |
 | `ssf checkpoint show <dir> <id>` | Show one recovery checkpoint |
+| `ssf resume [change]` | Read-only recovery summary; auto-selects the only active change |
+| `ssf switch <change>` | Read-only recovery context for an explicit change; an adapter may use it to focus the current AI conversation |
+| `ssf save <change> --task <id> --next <text>` | Manually reuses the existing checkpoint protocol; never commits, pushes, or syncs automatically |
 | `ssf handoff create <dir> --type <type> ...` | Create a prototype/research/experiment handoff |
 | `ssf handoff list <dir>` | List handoff lifecycle status |
 | `ssf handoff finish <dir> <id>` | Validate a handoff result |
@@ -144,10 +147,16 @@ If `--platforms` is omitted, injection only proceeds when exactly one project ma
 Session recovery and optional prototypes:
 
 ```bash
+ssf resume                         # auto-select only when exactly one change is active
+ssf resume changes/my-change       # read-only summary for one explicit change
+ssf switch changes/another-change  # read-only recovery context for one explicit change
+ssf save changes/my-change --task 1.1 --next "Run focused tests"
 ssf checkpoint save changes/my-change --task 1.1 --next "Run focused tests"
 ssf checkpoint list changes/my-change
 ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
 ```
+
+`resume` and `switch` are read-only recovery operations; `resume` auto-selects a target only when exactly one active change exists. `switch` only returns the explicit target's recovery context and never changes cwd, a TUI session, or a hidden pointer; the CLI itself does not mutate conversation focus, while a CodeBuddy/WorkBuddy adapter or host agent may use that context to focus the conversation. `save` only manually reuses the existing checkpoint protocol; it never commits, pushes, or syncs automatically. `/ssf:resume`, `/ssf:switch`, and `/ssf:save` are Markdown command adapters for CodeBuddy/WorkBuddy that dispatch to the same CLI guards; other platforms are not promised identical slash names.
 
 Prototype work starts only after explicit user confirmation. Backend, CLI,
 configuration, and internal-refactor work does not enter the prototype route
@@ -276,8 +285,9 @@ non-symlink file.
 
 Every planned wave needs a current `pass` review receipt before dependent
 waves or closing may proceed; revising a plan invalidates earlier receipts.
-The recovery, switching, and manual-save slash commands proposed in #47 are
-not implemented, so this documentation does not claim `/ssf:*` commands.
+Recovery, switching, and manual save form a control-plane overlay, not a ninth
+workflow state; their CLI and CodeBuddy/WorkBuddy Markdown adapters keep the
+same guards.
 
 ### Fast Paths (hotfix / tweak)
 

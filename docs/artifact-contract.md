@@ -71,9 +71,21 @@ required for every wave before dependent work or closing proceeds. `tweak` is
 exempt from execution-plan and review-receipt gates. `ssf execution revise`
 retains or upgrades an existing plan as `sdd`, requires fresh confirmation,
 creates a new revision, and
-clears prior review receipts; it never permits a downgrade. #47 slash commands for recovery,
-switching, and manual save are not implemented, so `/ssf:*` commands must not
-be claimed.
+clears prior review receipts; it never permits a downgrade.
+
+### Recovery control-plane overlay
+
+Recovery commands operate beside the eight-state workflow, without creating a
+ninth state or a new transition. `ssf resume [change-dir]` and `ssf switch
+<change-dir>` are read-only: resume returns a recovery summary and chooses a
+target automatically only when there is one active change; switch returns the
+explicit target's recovery context and never changes cwd, a TUI session, or a
+hidden pointer. Its CodeBuddy/WorkBuddy adapter may use that context to focus a
+conversation. `ssf save <change-dir> --task <id> --next <text>` manually writes a
+compatible checkpoint through the existing checkpoint save protocol. It never
+commits, pushes, or syncs automatically. `/ssf:resume`, `/ssf:switch`, and
+`/ssf:save` are CodeBuddy/WorkBuddy Markdown command adapters that dispatch to
+the same CLI guards; other platforms are not promised identical slash names.
 
 ## Mapping
 

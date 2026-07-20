@@ -61,8 +61,9 @@ are eligible. Each completed wave must have a current
 wave or `closing` can proceed. `ssf execution revise` retains or upgrades an
 existing plan as `sdd`; that new revision requires a fresh confirmation (and
 acknowledgement when it differs from the new recommendation), invalidates old
-review receipts, and does not permit a downgrade. #47 recovery/switch/save
-slash commands are not implemented; do not assume `/ssf:*` commands exist.
+review receipts, and does not permit a downgrade. Recovery, switching, and
+manual save are a control-plane overlay; they do not create a ninth workflow
+state.
 
 ### `debugging`
 
@@ -96,6 +97,12 @@ Checkpoints, handoffs, and prototypes are durable overlays, not workflow states.
 They do not add transitions to the state machine or change the meaning of the
 eight core states.
 
+- `ssf resume [change-dir]` is read-only and returns a recovery summary. With no
+  target, it auto-selects only the unique active change.
+- `ssf switch <change-dir>` is read-only and returns the explicit target's
+  recovery context; it never changes cwd, a TUI session, or a hidden pointer.
+- `ssf save <change-dir> --task <id> --next <text>` manually writes a compatible
+  checkpoint. It never commits, pushes, or syncs automatically.
 - `ssf checkpoint save <change-dir> --task <id> --next <text>` records task-level
   recovery context under `.superpowers/sdd/checkpoints/`.
 - `ssf handoff create <change-dir> --type <type> ...` creates explicit side-work
@@ -105,6 +112,9 @@ eight core states.
   审查和 resolve；stale checkpoint 仅保留为历史证据。
 - Prototype work is optional and requires explicit user confirmation. Results
   are reviewed manually and never mutate `design.md` or `tasks.md`.
+- `/ssf:resume`, `/ssf:switch`, and `/ssf:save` are CodeBuddy/WorkBuddy Markdown
+  command adapters for these CLI guards. The switch adapter may use its returned
+  context to focus a conversation; these names are not promised on every platform.
 
 ## Transitions
 

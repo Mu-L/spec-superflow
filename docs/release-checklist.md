@@ -27,6 +27,7 @@ Use this checklist before publishing a new version of `spec-superflow`.
 - templates reflect the current workflow expectations
 - `docs/artifact-contract.md` matches the templates and skills
 - `docs/state-machine.md` matches the actual workflow routing model
+- Recovery remains a control-plane overlay: resume/switch are read-only, save writes only the compatible checkpoint, and no ninth state is documented.
 - examples still demonstrate the documented workflow
 
 ## Example Quality
@@ -46,7 +47,38 @@ For each example in `docs/examples/`:
 - `node scripts/spec-superflow.mjs version <version> --dry-run` — reports all files in sync
 - `node scripts/check-version-consistency.mjs` — exits 0
 - `node scripts/spec-superflow.mjs --help` — all subcommands listed
-- `node scripts/spec-superflow.mjs install-workbuddy --dry-run` — finds all 9 skills and target paths
+- Verify `commands/ssf/resume.md`, `commands/ssf/switch.md`, and `commands/ssf/save.md` are complete canonical Markdown command assets.
+- `node --test tests/lib/recovery-command-assets.test.mjs` — scans every command asset for checkout-specific absolute paths; any failure is a release blocker.
+- `node scripts/spec-superflow.mjs install-workbuddy --dry-run` — finds all 9 skills, all 3 recovery commands, and target paths.
+- Run `install-workbuddy` against a temporary home and verify it installs `ssf:resume`, `ssf:switch`, and `ssf:save` as complete command assets.
+
+  ```bash
+  # Local release-candidate smoke: never writes ~/.workbuddy or downloads latest.
+  SSF_WORKBUDDY_SMOKE_HOME="$(mktemp -d)"
+  if grep -R -F "$PWD/" commands/ssf; then
+    echo "Canonical command assets contain the local checkout path" >&2
+    exit 1
+  fi
+  node scripts/spec-superflow.mjs install-workbuddy --local "$PWD" --home "$SSF_WORKBUDDY_SMOKE_HOME"
+  SSF_WORKBUDDY_PLUGIN="$SSF_WORKBUDDY_SMOKE_HOME/.workbuddy/plugins/marketplaces/cb_teams_marketplace/plugins/spec-superflow"
+  test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/resume.md"
+  test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/switch.md"
+  test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/save.md"
+  if grep -R -F "$PWD/" "$SSF_WORKBUDDY_PLUGIN/commands/ssf"; then
+    echo "Installed command assets contain the local checkout path" >&2
+    exit 1
+  fi
+  test "$(find "$SSF_WORKBUDDY_PLUGIN/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = 9
+  test -d "$SSF_WORKBUDDY_PLUGIN/scripts"
+  test -d "$SSF_WORKBUDDY_PLUGIN/docs"
+  test -d "$SSF_WORKBUDDY_PLUGIN/templates"
+  test -d "$SSF_WORKBUDDY_PLUGIN/dist"
+  test -d "$SSF_WORKBUDDY_PLUGIN/hooks"
+  test -f "$SSF_WORKBUDDY_PLUGIN/rules/phase-guard.md"
+  test -f "$SSF_WORKBUDDY_PLUGIN/.codebuddy-plugin/plugin.json"
+  node --input-type=module -e 'import { readFileSync } from "node:fs"; const settings = JSON.parse(readFileSync(process.argv[1], "utf8")); if (settings.enabledPlugins?.["spec-superflow@cb_teams_marketplace"] !== true) throw new Error("WorkBuddy plugin is not enabled");' "$SSF_WORKBUDDY_SMOKE_HOME/.workbuddy/settings.json"
+  node --test tests/lib/cmd-install-workbuddy.test.mjs
+  ```
 - `npm run test:raw-mode` — packs the current source and runs a canonical runtime in an empty directory with no plugin-root variables or global `ssf`.
 - Run a representative local-installer smoke test.
 - `spec-superflow.config.json` absence still works (backward compatible defaults)
