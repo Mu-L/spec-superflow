@@ -129,7 +129,7 @@ guard 的 workflow 转换矩阵。
 详细记录保存到 change overlay：
 
 ```text
-<change-dir>/.superpowers/workflow-selection.json
+<change-dir>/.superpowers/sdd/workflow-selection.json
 ```
 
 记录包含：
@@ -200,9 +200,10 @@ workflow_path=hotfix; recommended=hotfix; followed_recommendation=true
 
 ## 发布安排
 
-Issue #70 实现、评审和状态收口完成后，再执行 `ssf version 0.11.0`，将
-Unreleased 内容整理为 `0.11.0` 发布项，同步 README、英文 README、安装文档、
-全部 manifests 和九个 canonical skills。发布 PR 使用 `Closes #70`。
+Issue #70 功能实现和聚焦评审完成后、最终 `executing -> closing` 转换前，执行
+`ssf version 0.11.0`，将 Unreleased 内容整理为 `0.11.0` 发布项，同步 README、
+英文 README、安装文档、全部 manifests 和九个 canonical skills。随后完成
+全分支评审、spec merge 和 closing；发布 PR 使用 `Closes #70`。
 
 发布准备不包含创建 tag、npm publish、GitHub Release 或外部 marketplace
 写操作；这些动作继续等待维护者单独授权。
