@@ -52,6 +52,7 @@ const WORKFLOW_TRANSITION_CHECKS = {
     'exploring:bridging': [],
     'bridging:approved-for-build': ['contract-current', 'dp3-approved'],
     'approved-for-build:executing': ['contract-current', 'dp3-approved', 'execution-plan-ready'],
+    'executing:closing': ['tests-passing', 'specs-merged', 'execution-plan-ready', 'execution-reviews-passed'],
   },
   tweak: {
     'exploring:approved-for-build': [],
