@@ -81,4 +81,18 @@ describe('workflow path recommendation', () => {
       rmSync(changeDir, { recursive: true, force: true });
     }
   });
+
+  it('rejects Unicode control characters and line separators in selection reasons', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-reason-'));
+    try {
+      saveWorkflowRecommendation(changeDir, base);
+      for (const reason of ['contains\u0085c1 control', 'contains\u2028line separator']) {
+        assert.throws(() => recordWorkflowSelection(changeDir, {
+          mode: 'hotfix', reason, confirmed: true, acknowledged: false,
+        }), /single-line/i);
+      }
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
+  });
 });

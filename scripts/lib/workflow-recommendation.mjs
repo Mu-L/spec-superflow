@@ -160,5 +160,5 @@ function writeRecord(changeDir, record) {
 function isSafeReason(value) {
   return typeof value === 'string'
     && value.trim().length > 0
-    && !/[\r\n\u0000-\u001f\u007f]/.test(value);
+    && !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value);
 }
