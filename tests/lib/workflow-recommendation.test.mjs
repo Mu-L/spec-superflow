@@ -1,9 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   recommendWorkflowPath,
+  recordWorkflowSelection,
+  readWorkflowSelection,
+  saveWorkflowRecommendation,
   WORKFLOW_MODES,
 } from '../../scripts/lib/workflow-recommendation.mjs';
+import { getOverlayPaths } from '../../scripts/lib/sdd-overlay.mjs';
 
 const base = {
   task_count: 2,
@@ -41,5 +48,37 @@ describe('workflow path recommendation', () => {
     assert.equal(result.status, 'needs-input');
     assert.equal(result.recommendation, null);
     assert.deepEqual(result.missing_facts, ['file_count', 'new_module']);
+  });
+
+  it('persists a hashed recommendation and detects tampering', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-recommend-'));
+    try {
+      const saved = saveWorkflowRecommendation(changeDir, base);
+      assert.match(saved.hash, /^sha256:/);
+      assert.equal(readWorkflowSelection(changeDir).valid, true);
+      const file = getOverlayPaths(changeDir).workflowSelection;
+      const tampered = JSON.parse(readFileSync(file, 'utf8'));
+      tampered.facts.file_count = 99;
+      writeFileSync(file, JSON.stringify(tampered));
+      assert.equal(readWorkflowSelection(changeDir).valid, false);
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
+  });
+
+  it('requires acknowledgement for a non-recommended selection', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-select-'));
+    try {
+      saveWorkflowRecommendation(changeDir, base);
+      assert.throws(() => recordWorkflowSelection(changeDir, {
+        mode: 'full', reason: 'operator preference', confirmed: true, acknowledged: false,
+      }), /acknowledge/i);
+      const selected = recordWorkflowSelection(changeDir, {
+        mode: 'full', reason: 'operator preference', confirmed: true, acknowledged: true,
+      });
+      assert.equal(selected.selection.followed_recommendation, false);
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
   });
 });

@@ -1,3 +1,10 @@
+import { createHash, randomUUID } from 'node:crypto';
+import {
+  existsSync, mkdirSync, readFileSync, renameSync, writeFileSync,
+} from 'node:fs';
+import { dirname } from 'node:path';
+import { getOverlayPaths } from './sdd-overlay.mjs';
+
 export const WORKFLOW_MODES = Object.freeze(['full', 'hotfix', 'tweak']);
 
 const BOOLEAN_FACTS = ['config_doc_only', 'schema_api_change', 'new_module'];
@@ -34,6 +41,76 @@ export function recommendWorkflowPath(input = {}) {
   return ready(base, 'full', 'The observed scope exceeds the fast-path thresholds.');
 }
 
+export function saveWorkflowRecommendation(changeDir, facts) {
+  const recommendation = recommendWorkflowPath(facts);
+  const record = withHash({
+    schema_version: 1,
+    ...recommendation,
+    created_at: new Date().toISOString(),
+    selection: null,
+  });
+  writeRecord(changeDir, record);
+  return record;
+}
+
+export function readWorkflowSelection(changeDir) {
+  const path = getOverlayPaths(changeDir).workflowSelection;
+  if (!existsSync(path)) {
+    return {
+      exists: false,
+      valid: false,
+      record: null,
+      failures: ['workflow recommendation is missing'],
+    };
+  }
+  try {
+    const record = JSON.parse(readFileSync(path, 'utf8'));
+    const valid = record.hash === hashRecord(record);
+    return {
+      exists: true,
+      valid,
+      record,
+      failures: valid ? [] : ['workflow recommendation hash mismatch'],
+    };
+  } catch (error) {
+    return {
+      exists: true,
+      valid: false,
+      record: null,
+      failures: [error.message],
+    };
+  }
+}
+
+export function recordWorkflowSelection(changeDir, { mode, reason, confirmed, acknowledged }) {
+  const loaded = readWorkflowSelection(changeDir);
+  if (!loaded.valid) throw new Error(loaded.failures.join('; '));
+  if (loaded.record.status !== 'ready' || !loaded.record.recommendation) {
+    throw new Error('workflow recommendation needs more input');
+  }
+  if (!WORKFLOW_MODES.includes(mode)) throw new Error(`invalid workflow mode: ${mode}`);
+  if (confirmed !== true) throw new Error('workflow selection requires --confirm');
+  if (!isSafeReason(reason)) {
+    throw new Error('workflow selection reason must be non-empty single-line text');
+  }
+  const followed = mode === loaded.record.recommendation.mode;
+  if (!followed && acknowledged !== true) {
+    throw new Error('non-recommended workflow selection requires acknowledgement');
+  }
+  const selected = withHash({
+    ...withoutHash(loaded.record),
+    selection: {
+      mode,
+      reason,
+      followed_recommendation: followed,
+      acknowledged_non_recommendation: !followed && acknowledged === true,
+      selected_at: new Date().toISOString(),
+    },
+  });
+  writeRecord(changeDir, selected);
+  return selected;
+}
+
 function ready(base, mode, reason) {
   return { ...base, status: 'ready', recommendation: { mode, reasons: [reason] } };
 }
@@ -50,4 +127,38 @@ function normalizeEnum(value, allowed) {
   if (value === null || value === undefined) return 'unknown';
   if (!allowed.includes(value)) throw new Error(`invalid workflow fact value: ${value}`);
   return value;
+}
+
+function withoutHash(record) {
+  const { hash, ...content } = record;
+  return content;
+}
+
+function stableJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+}
+
+function hashRecord(record) {
+  return `sha256:${createHash('sha256').update(stableJson(withoutHash(record))).digest('hex')}`;
+}
+
+function withHash(content) {
+  const record = { ...content };
+  return { ...record, hash: hashRecord(record) };
+}
+
+function writeRecord(changeDir, record) {
+  const target = getOverlayPaths(changeDir).workflowSelection;
+  mkdirSync(dirname(target), { recursive: true });
+  const temporary = `${target}.tmp-${process.pid}-${randomUUID()}`;
+  writeFileSync(temporary, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  renameSync(temporary, target);
+}
+
+function isSafeReason(value) {
+  return typeof value === 'string'
+    && value.trim().length > 0
+    && !/[\r\n\u0000-\u001f\u007f]/.test(value);
 }
