@@ -254,6 +254,37 @@ describe('guard: hotfix minimal contract', () => {
     const dims = result.output.checks.map(c => c.dimension);
     assert.deepEqual(dims, ['contract-current', 'dp3-approved', 'execution-plan-ready']);
   });
+
+  it('allows a reviewed hotfix without tasks.md to enter closing', () => {
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nHotfix closing contract.\n');
+    runNodeScript(CLI_PATH, ['state', 'init', dir]);
+    runNodeScript(CLI_PATH, ['state', 'set', dir, 'workflow', 'hotfix']);
+    const refs = initializeGitRepository(dir);
+
+    runNodeScript(CLI_PATH, ['execution', 'recommend', dir, '--wave', 'wave-1:serial:1.1']);
+    runNodeScript(CLI_PATH, ['execution', 'plan', dir, '--mode', 'inline', '--confirm',
+      '--reason', 'user-selected hotfix closing plan', '--wave', 'wave-1:serial:1.1']);
+
+    const reportsDir = join(dir, '.superpowers', 'sdd', 'reviews');
+    mkdirSync(reportsDir, { recursive: true });
+    writeFileSync(join(reportsDir, 'wave-1.md'), 'Hotfix review passed.\n');
+    runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
+      '--base', refs.base, '--head', refs.head, '--report', '.superpowers/sdd/reviews/wave-1.md', '--verdict', 'pass']);
+    runNodeScript(CLI_PATH, ['state', 'set', dir, 'test_result', 'pass']);
+    runNodeScript(CLI_PATH, ['state', 'set', dir, 'spec_merged', 'true']);
+
+    const result = run('executing', 'closing');
+
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.deepEqual(result.output.checks.map(check => check.dimension), [
+      'tests-passing',
+      'specs-merged',
+      'execution-plan-ready',
+      'execution-reviews-passed',
+    ]);
+  });
 });
 
 describe('guard: execution control records', () => {
