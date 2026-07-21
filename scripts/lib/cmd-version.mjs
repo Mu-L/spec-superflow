@@ -5,6 +5,8 @@ import { join } from 'node:path';
 // ── JSON manifests with structured path ──
 const MANIFESTS = [
   { file: 'package.json', path: ['version'] },
+  { file: 'package-lock.json', path: ['version'] },
+  { file: 'package-lock.json', path: ['packages', '', 'version'] },
   { file: 'plugin.json', path: ['version'] },
   { file: '.claude-plugin/plugin.json', path: ['version'] },
   { file: '.claude-plugin/marketplace.json', path: ['plugins', '0', 'version'] },
@@ -38,6 +40,9 @@ const TEXT_FILES = [
   { file: 'skills/bug-investigator/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/release-archivist/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/spec-merger/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
+  { file: 'commands/ssf/resume.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
+  { file: 'commands/ssf/switch.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
+  { file: 'commands/ssf/save.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
 ];
 
 function getNestedValue(obj, pathParts) {

@@ -10,7 +10,7 @@ The format loosely follows Keep a Changelog.
 
 ### Added
 
-- **Closes #47 — Recovery workflow commands**: publish `ssf resume`, `ssf switch`, and `ssf save` as a control-plane overlay. Resume/switch are read-only; save writes only the compatible checkpoint and never automatically commits, pushes, or syncs. WorkBuddy distributes the canonical `/ssf:resume`, `/ssf:switch`, and `/ssf:save` Markdown command adapters.
+- **Closes #47 — Recovery workflow commands**: add `ssf resume`, `ssf switch`, and `ssf save` as a control-plane overlay. Resume/switch are read-only; save writes only the compatible checkpoint and never automatically commits, pushes, or syncs. WorkBuddy distributes the canonical `/ssf:resume`, `/ssf:switch`, and `/ssf:save` Markdown command adapters.
 - **Closes #70 — Workflow path recommendation and selection**: `ssf workflow recommend/select/show` collects minimal intake facts, recommends full, hotfix, or tweak with reasons, and requires an explicit, auditable choice before workflow state routing continues.
 
 ### Changed
