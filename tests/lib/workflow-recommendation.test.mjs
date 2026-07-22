@@ -1,0 +1,98 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import {
+  recommendWorkflowPath,
+  recordWorkflowSelection,
+  readWorkflowSelection,
+  saveWorkflowRecommendation,
+  WORKFLOW_MODES,
+} from '../../scripts/lib/workflow-recommendation.mjs';
+import { getOverlayPaths } from '../../scripts/lib/sdd-overlay.mjs';
+
+const base = {
+  task_count: 2,
+  file_count: 2,
+  config_doc_only: 'no',
+  schema_api_change: 'no',
+  new_module: 'no',
+  uncertainty: 'low',
+};
+
+describe('workflow path recommendation', () => {
+  it('recommends hotfix for a bounded code change', () => {
+    const result = recommendWorkflowPath(base);
+    assert.equal(result.status, 'ready');
+    assert.deepEqual(result.available_modes, WORKFLOW_MODES);
+    assert.equal(result.recommendation.mode, 'hotfix');
+  });
+
+  it('recommends tweak for a small config/doc-only change', () => {
+    const result = recommendWorkflowPath({ ...base, task_count: 4, file_count: 4, config_doc_only: 'yes' });
+    assert.equal(result.recommendation.mode, 'tweak');
+  });
+
+  it('recommends full for risk, uncertainty, or threshold overflow', () => {
+    for (const facts of [
+      { ...base, schema_api_change: 'yes' },
+      { ...base, new_module: 'yes' },
+      { ...base, uncertainty: 'high' },
+      { ...base, task_count: 3 },
+    ]) assert.equal(recommendWorkflowPath(facts).recommendation.mode, 'full');
+  });
+
+  it('returns needs-input instead of full when facts are unknown', () => {
+    const result = recommendWorkflowPath({ ...base, file_count: null, new_module: 'unknown' });
+    assert.equal(result.status, 'needs-input');
+    assert.equal(result.recommendation, null);
+    assert.deepEqual(result.missing_facts, ['file_count', 'new_module']);
+  });
+
+  it('persists a hashed recommendation and detects tampering', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-recommend-'));
+    try {
+      const saved = saveWorkflowRecommendation(changeDir, base);
+      assert.match(saved.hash, /^sha256:/);
+      assert.equal(readWorkflowSelection(changeDir).valid, true);
+      const file = getOverlayPaths(changeDir).workflowSelection;
+      const tampered = JSON.parse(readFileSync(file, 'utf8'));
+      tampered.facts.file_count = 99;
+      writeFileSync(file, JSON.stringify(tampered));
+      assert.equal(readWorkflowSelection(changeDir).valid, false);
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
+  });
+
+  it('requires acknowledgement for a non-recommended selection', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-select-'));
+    try {
+      saveWorkflowRecommendation(changeDir, base);
+      assert.throws(() => recordWorkflowSelection(changeDir, {
+        mode: 'full', reason: 'operator preference', confirmed: true, acknowledged: false,
+      }), /acknowledge/i);
+      const selected = recordWorkflowSelection(changeDir, {
+        mode: 'full', reason: 'operator preference', confirmed: true, acknowledged: true,
+      });
+      assert.equal(selected.selection.followed_recommendation, false);
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects Unicode control characters and line separators in selection reasons', () => {
+    const changeDir = mkdtempSync(join(tmpdir(), 'ssf-workflow-reason-'));
+    try {
+      saveWorkflowRecommendation(changeDir, base);
+      for (const reason of ['contains\u0085c1 control', 'contains\u2028line separator']) {
+        assert.throws(() => recordWorkflowSelection(changeDir, {
+          mode: 'hotfix', reason, confirmed: true, acknowledged: false,
+        }), /single-line/i);
+      }
+    } finally {
+      rmSync(changeDir, { recursive: true, force: true });
+    }
+  });
+});

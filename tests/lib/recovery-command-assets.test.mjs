@@ -16,6 +16,8 @@ function read(path) {
   return readFileSync(join(process.cwd(), path), 'utf8');
 }
 
+const VERSION = JSON.parse(read('package.json')).version;
+
 function executableSsfCommands(content) {
   return [...content.matchAll(/`([^`\n]*\bssf\s+(?:resume|switch|save)\b[^`]*)`/g)]
     .map(match => match[1]);
@@ -56,7 +58,7 @@ describe('SSF recovery command assets', () => {
 
       assert.match(content, /^---\n[\s\S]+description:/);
       assert.match(content, /argument-hint:/);
-      assert.match(content, new RegExp(`spec-superflow@0\\.10\\.0 ssf ${name}`));
+      assert.match(content, new RegExp(`spec-superflow@${VERSION.replaceAll('.', '\\.')} ssf ${name}`));
       assert.match(content, /\$ARGUMENTS/);
       assert.doesNotMatch(content, /state set|state transition|active-change|\bcd\s/);
       assertNoCheckoutAbsolutePaths(content);
@@ -93,15 +95,15 @@ describe('SSF recovery command assets', () => {
   });
 
   it('rejects unquoted raw arguments after executable command flags', () => {
-    const unsafeResume = 'Run `npx --yes --package spec-superflow@0.10.0 ssf resume --json $ARGUMENTS`.';
-    const unsafeSwitch = 'Run `npx --yes --package spec-superflow@0.10.0 ssf switch --flag $ARGUMENTS`.';
+    const unsafeResume = `Run \`npx --yes --package spec-superflow@${VERSION} ssf resume --json $ARGUMENTS\`.`;
+    const unsafeSwitch = `Run \`npx --yes --package spec-superflow@${VERSION} ssf switch --flag $ARGUMENTS\`.`;
 
     assert.throws(() => assertNoUnquotedArguments(unsafeResume), /\$ARGUMENTS/);
     assert.throws(() => assertNoUnquotedArguments(unsafeSwitch), /\$ARGUMENTS/);
   });
 
   it('accepts quoted argument input and prose-only argument mentions', () => {
-    const safeResume = 'Run `npx --yes --package spec-superflow@0.10.0 ssf resume --json "$ARGUMENTS"`. $ARGUMENTS is conversational input.';
+    const safeResume = `Run \`npx --yes --package spec-superflow@${VERSION} ssf resume --json "$ARGUMENTS"\`. $ARGUMENTS is conversational input.`;
 
     assert.doesNotThrow(() => assertNoUnquotedArguments(safeResume));
     assert.doesNotThrow(() => assertNoUnquotedArguments(read('commands/ssf/save.md')));
@@ -125,7 +127,7 @@ describe('SSF recovery command assets', () => {
   });
 
   it('does not mistake the pinned portable npx entrypoint for a checkout path', () => {
-    const portable = 'Run `npx --yes --package spec-superflow@0.10.0 ssf resume --json "$ARGUMENTS"`.';
+    const portable = `Run \`npx --yes --package spec-superflow@${VERSION} ssf resume --json "$ARGUMENTS"\`.`;
 
     assert.doesNotThrow(() => assertNoCheckoutAbsolutePaths(portable));
   });

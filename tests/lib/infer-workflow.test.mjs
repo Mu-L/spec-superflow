@@ -22,7 +22,7 @@ describe('infer-workflow: inferMode()', () => {
     if (tempDir) rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('returns full mode for empty directory (no artifacts)', () => {
+  it('keeps the legacy artifact inference safe default for compatibility', () => {
     const result = inferMode(tempDir);
     assert.equal(result.mode, 'full');
     assert.equal(result.explicit, false);

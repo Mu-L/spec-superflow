@@ -25,6 +25,8 @@ const errors = [];
 
 // ── JSON manifests ──
 const JSON_CHECKS = [
+  { file: 'package-lock.json', path: ['version'] },
+  { file: 'package-lock.json', path: ['packages', '', 'version'] },
   { file: 'plugin.json', path: ['version'] },
   { file: '.claude-plugin/plugin.json', path: ['version'] },
   { file: '.claude-plugin/marketplace.json', path: ['plugins', '0', 'version'] },
@@ -90,6 +92,9 @@ const RUNTIME_FILES = [
   'skills/build-executor/implementer-prompt.md',
   'skills/build-executor/task-reviewer-prompt.md',
   'skills/code-reviewer/code-reviewer-prompt.md',
+  'commands/ssf/resume.md',
+  'commands/ssf/switch.md',
+  'commands/ssf/save.md',
 ]);
 for (const file of RUNTIME_FILES) {
   const fp = join(ROOT, file);

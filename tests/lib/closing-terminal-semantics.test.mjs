@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = process.cwd();
+const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+const RUNTIME_PREFIX = `npx --yes --package spec-superflow@${VERSION} ssf`;
 
 function read(relativePath) {
   return readFileSync(join(ROOT, relativePath), 'utf8');
@@ -90,11 +92,11 @@ describe('closing terminal lifecycle', () => {
   it('places the release guard before every closing side effect and makes transition last', () => {
     const archivist = read('skills/release-archivist/SKILL.md');
     const guard = archivist.indexOf('## Execution-State Guard');
-    const audit = archivist.indexOf('npx --yes --package spec-superflow@0.10.0 ssf audit <change-dir>');
+    const audit = archivist.indexOf(`${RUNTIME_PREFIX} audit <change-dir>`);
     const dp6 = archivist.indexOf('### DP-6 (Verification Outcome)');
     const dp7 = archivist.indexOf('### DP-7 (Archive Confirmation)');
     const merger = archivist.indexOf('invoke `spec-merger`');
-    const transition = archivist.indexOf('npx --yes --package spec-superflow@0.10.0 ssf state transition <change-dir> closing');
+    const transition = archivist.indexOf(`${RUNTIME_PREFIX} state transition <change-dir> closing`);
 
     for (const [marker, index] of [
       ['release guard', guard],
@@ -113,7 +115,7 @@ describe('closing terminal lifecycle', () => {
     assert.ok(dp7 < merger, 'DP-7 must be recorded before invoking spec-merger');
     assert.ok(merger < transition, 'spec-merger must run before the actual final transition');
     assert.equal(
-      (archivist.match(/npx --yes --package spec-superflow@0\.10\.0 ssf state transition <change-dir> closing/g) || []).length,
+      archivist.split(`${RUNTIME_PREFIX} state transition <change-dir> closing`).length - 1,
       1,
       'the actual final transition command must occur exactly once'
     );
@@ -186,12 +188,14 @@ describe('closing terminal lifecycle', () => {
     }
   });
 
-  it('records the #64 terminal closing repair in the unreleased changelog', () => {
+  it('records the #64 terminal closing repair in the dated current release', () => {
     const changelog = read('CHANGELOG.md');
     const unreleased = section(changelog, '## [Unreleased]');
+    const currentRelease = section(changelog, `## [${VERSION}] - 2026-07-21`);
 
-    assert.match(unreleased, /#64/);
-    assert.match(unreleased, /closing/i);
-    assert.match(unreleased, /终态/);
+    assert.equal(unreleased.trim(), '## [Unreleased]');
+    assert.match(currentRelease, /#64/);
+    assert.match(currentRelease, /closing/i);
+    assert.match(currentRelease, /终态/);
   });
 });
